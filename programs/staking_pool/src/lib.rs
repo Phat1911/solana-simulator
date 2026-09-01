@@ -6,6 +6,10 @@
 //! intentionally introduced in later milestones after their invariants are
 //! reviewed.
 
+pub mod constants;
+pub mod error;
+pub mod math;
+
 pub const PROGRAM_NAME: &str = "staking_pool";
 pub const PROGRAM_VERSION: u8 = 1;
 

@@ -7,3 +7,6 @@ node_modules/
 # Milestone 2: beginner notes and local scratch files stay private.
 private-notes/
 LEARNING_NOTES.md
+
+# Local agent skills
+.agents/

@@ -24,8 +24,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Define six-decimal token base units, `PRECISION = 1_000_000_000`, maximum reward rate, and checked conversion helpers.
-- [ ] Implement only pure arithmetic helpers for `u64` values and `u128` scaled intermediates.
+- [x] Define six-decimal token base units, `PRECISION = 1_000_000_000`, maximum reward rate, and checked conversion helpers.
+- [x] Implement only pure arithmetic helpers for `u64` values and `u128` scaled intermediates.
 - **Invariant:** Protocol math never uses floating point, never silently overflows or underflows, and never mixes token units with scaled-token units.
 - **Verification:** Unit tests cover zero, one-base-unit, fractional-scaled, maximum-safe, overflow, underflow, and narrowing cases.
 

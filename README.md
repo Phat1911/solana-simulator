@@ -12,14 +12,15 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 and 2 are complete. The repository now has the baseline workspace,
-empty staking and faucet program crates, placeholder frontend and evidence
-directories, private-note ignore rules, and the first audit/test evidence
-structure.
+Milestones 1, 2, and 3 are complete. The repository now has the baseline
+workspace, empty staking and faucet program crates, placeholder frontend and
+evidence directories, private-note ignore rules, the first audit/test evidence
+structure, and pure checked arithmetic helpers for six-decimal token units and
+scaled reward units.
 
-No protocol behavior is implemented yet. Reward math, account schemas, SPL Token
-CPIs, governance, faucet claims, frontend wallet flows, and Devnet deployment
-remain planned work.
+No account or token-transfer behavior is implemented yet. Reward checkpointing,
+account schemas, SPL Token CPIs, governance, faucet claims, frontend wallet
+flows, and Devnet deployment remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -115,9 +116,9 @@ Package and toolchain versions are pinned in the baseline workspace:
 - Node.js target: `22.18.0`
 - npm target: `10.9.3`
 
-The current local PATH has Rust, Cargo, Node, and npm available. Anchor and
-Solana CLI installation is still required before Anchor-specific build and test
-commands can run locally.
+The WSL `crypto` environment has the pinned Rust, Anchor, and Solana toolchains
+available. The original Windows workspace still has a rustup shim temp-file
+limitation, so WSL is the recommended development environment.
 
 ## Testing
 
@@ -145,11 +146,9 @@ SPEC.md                  authoritative specification
 AUDIT.md                 living security self-audit
 ```
 
-Beginner learning notes are intentionally kept in a private, gitignored path instead of the public specification and portfolio article.
-
 ## Development Environment
 
-Anchor development on Windows will use WSL. The current machine has limited free space on `C:`, so WSL storage, toolchains, dependency caches, and build artifacts should be placed on `D:` before installation. The storage migration/setup will be handled as a separate preparation task.
+Anchor development on Windows will use WSL. The storage migration/setup will be handled as a separate preparation task.
 
 The current baseline workflow is:
 
