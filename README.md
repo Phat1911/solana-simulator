@@ -12,7 +12,14 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Specification drafted; implementation has not started.
+Milestones 1 and 2 are complete. The repository now has the baseline workspace,
+empty staking and faucet program crates, placeholder frontend and evidence
+directories, private-note ignore rules, and the first audit/test evidence
+structure.
+
+No protocol behavior is implemented yet. Reward math, account schemas, SPL Token
+CPIs, governance, faucet claims, frontend wallet flows, and Devnet deployment
+remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -100,7 +107,17 @@ The Stake and Reward Vaults are canonical ATAs owned by the Pool Authority PDA. 
 - Tailwind CSS
 - Vitest, Testing Library, and Playwright
 
-Package and toolchain versions will be pinned together during workspace setup to preserve Anchor and Solana compatibility.
+Package and toolchain versions are pinned in the baseline workspace:
+
+- Rust toolchain: `1.86.0`
+- Anchor CLI target: `0.31.1`
+- Solana CLI target: `2.1.21`
+- Node.js target: `22.18.0`
+- npm target: `10.9.3`
+
+The current local PATH has Rust, Cargo, Node, and npm available. Anchor and
+Solana CLI installation is still required before Anchor-specific build and test
+commands can run locally.
 
 ## Testing
 
@@ -134,17 +151,22 @@ Beginner learning notes are intentionally kept in a private, gitignored path ins
 
 Anchor development on Windows will use WSL. The current machine has limited free space on `C:`, so WSL storage, toolchains, dependency caches, and build artifacts should be placed on `D:` before installation. The storage migration/setup will be handled as a separate preparation task.
 
-Once the workspace is scaffolded, the expected workflow will include:
+The current baseline workflow is:
+
+```bash
+cargo fmt-all
+cargo lint
+cargo test-all
+cd app && npm run test
+```
+
+Later milestones will add the full Anchor and frontend workflows:
 
 ```bash
 anchor build
-cargo test
 anchor test
-npm run test
 npm run build
 ```
-
-These commands are targets for the implementation phase and are not yet available in this specification-only repository.
 
 ## Safety Notice
 

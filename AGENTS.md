@@ -2,6 +2,8 @@
 
 ## Working Context
 
+- In your implementation, don't forget to mark (comment) what is milestone this code relate.
+- Update current status section in README.md for progression.
 - Always communicate with the user in English.
 - The user is new to Rust and Solana, but understands basic Solidity/Ethereum ideas.
 - Explain each new core concept from first principles and include a small numeric example when useful.

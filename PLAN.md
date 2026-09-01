@@ -2,33 +2,27 @@
 
 This plan turns `SPEC.md` into small, reviewable increments. Milestones are completed in order unless the user explicitly changes the order.
 
-## Labels And Checkpoints
-
-- **Core logic — I need deep understanding**: explain from first principles, show a concrete example, state the invariant, and obtain explicit user confirmation before implementation.
-- **Supporting/boilerplate — I need a quick review, not a deep checkpoint**: briefly describe the work and its purpose, then proceed after a quick review.
-- Every milestone includes its own tests and `AUDIT.md` entry. A checkbox is marked only after implementation and verification succeed.
-
 ## Milestones
 
 ### 1. Minimal Workspace And Toolchain
 
 **Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
 
-- [ ] Create the Anchor workspace, the two program crates, shared test directories, frontend placeholder, and documented version pins.
-- [ ] Add formatting, linting, build, and test commands without implementing protocol behavior.
-- **Verification:** Both empty programs compile; Rust formatting and the initial test command pass.
+- [x] Create the Anchor workspace, the two program crates, shared test directories, frontend placeholder, and documented version pins.
+- [x] Add formatting, linting, build, and test commands without implementing protocol behavior.
+- **Verification:** Both empty programs compile through Cargo; Rust formatting and the initial test command pass. Anchor/Solana CLI verification is documented as pending local toolchain installation.
 
 ### 2. Test And Audit Baseline
 
 **Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
 
-- [ ] Add pure Rust test modules, a minimal LiteSVM harness, `AUDIT.md`, and private-notes ignore rules.
-- [ ] Record tool versions, test layers, and the evidence format used by later milestones.
+- [x] Add pure Rust test modules, a minimal LiteSVM harness, `AUDIT.md`, and private-notes ignore rules.
+- [x] Record tool versions, test layers, and the evidence format used by later milestones.
 - **Verification:** One harmless test runs in each available lightweight harness; private-note paths are ignored.
 
 ### 3. Units And Checked Arithmetic
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Define six-decimal token base units, `PRECISION = 1_000_000_000`, maximum reward rate, and checked conversion helpers.
 - [ ] Implement only pure arithmetic helpers for `u64` values and `u128` scaled intermediates.
@@ -37,7 +31,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 4. Global Reward Checkpoint Math
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement the pure calculation for elapsed slots, desired emission, partial final emission, budget reduction, and `acc_reward_per_share_scaled` growth.
 - [ ] Model paused, zero-stake, and exhausted-budget checkpoints without account access or CPIs.
@@ -46,7 +40,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 5. Position Settlement And Claim Math
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement pure position settlement, reward debt updates, pending rewards, claimable whole tokens, and scaled remainder preservation.
 - [ ] Implement the accounting effect of normal claim and emergency forfeiture.
@@ -55,7 +49,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 6. Staking Account Schemas And PDA Recipes
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Define versioned, fixed-size `Pool`, `Position`, and `Proposal` layouts plus all canonical PDA derivations. The Pool Authority PDA has no data account.
 - [ ] Encode immutable mint/vault relationships, admin epoch, proposal action data, and position ownership.
@@ -64,7 +58,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 7. Pool Initialization And Vault Authority
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement pool initialization with three distinct admins, threshold two, original Token Program checks, and separate SPL Token vaults controlled by the Pool Authority PDA.
 - [ ] Require distinct six-decimal stake and reward mints; start paused with rate zero and immutable maximum rate.
@@ -73,7 +67,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 8. Position Open And Close Lifecycle
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement permissionless opening of the canonical user position and safe closure by its owning user.
 - [ ] Permit closure only when stake, pending reward, reward debt, and scaled remainder are all zero.
@@ -82,7 +76,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 9. Reward Funding
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement permissionless funding from any valid reward token account whose authority signs.
 - [ ] Checkpoint before transfer, then increase unallocated scaled budget by exactly the received base units times `PRECISION`.
@@ -91,7 +85,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 10. Stake
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement staking from the user's canonical stake ATA after checkpointing and settling the existing position.
 - [ ] Transfer principal through the original SPL Token Program and update position and pool totals atomically.
@@ -100,7 +94,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 11. Normal Unstake
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement partial and full unstake after checkpointing and settling rewards, including while paused.
 - [ ] Return principal only to the user's canonical stake ATA using Pool Authority signer seeds.
@@ -109,7 +103,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 12. Claim
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement claim to the user's canonical reward ATA after checkpointing and settling the position.
 - [ ] Transfer only whole base units, decrement scaled liability by the exact transferred amount, and retain fractional scaled remainder.
@@ -118,7 +112,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 13. Pause And Unpause Semantics
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement immediate pause by any current admin and proposal-only unpause.
 - [ ] Checkpoint at both boundaries so paused slots never generate rewards.
@@ -127,7 +121,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 14. Emergency Withdraw And Forfeiture
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement emergency principal withdrawal with no reward payout in both active and paused states.
 - [ ] Settle first, return all principal, and move the position's complete pending scaled reward from allocated liability to unallocated reserve.
@@ -136,7 +130,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 15. Proposal Creation And Approval
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement monotonically identified proposal PDAs for one immutable allowlisted action: set rate, unpause, or replace one admin.
 - [ ] Store pool, proposer approval, creation/expiry slots, and the current `admin_epoch`; allow one approval per distinct current admin.
@@ -145,7 +139,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 16. Proposal Execution And Admin Rotation
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Execute threshold-approved proposals exactly once; checkpoint before rate changes; apply unpause timing; rotate one admin and increment `admin_epoch`.
 - [ ] Add safe proposal closure only after execution, expiry, or stale-epoch invalidation, returning rent to the recorded proposer.
@@ -154,7 +148,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 17. Demo Faucet Program
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement fixed-config faucet initialization and one `1_000 STAKE` claim per wallet using canonical claim-receipt and faucet-authority PDAs.
 - [ ] Keep the receipt non-closable and separate all faucet authority from staking administration.
@@ -163,7 +157,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 18. Cross-Instruction Invariant Suite
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Build multi-user and adversarial state-machine scenarios across funding, staking, slot advancement, claims, pause, emergency withdrawal, and governance.
 - [ ] Assert vault balances and all scaled budget/liability quantities after every successful transition and every expected failure.
@@ -188,7 +182,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 21. User Transaction Flows
 
-**Label:** Core logic — I need deep understanding.
+**Label:** Core logic
 
 - [ ] Implement faucet claim, position opening, stake, unstake, emergency withdrawal, and claim transaction builders using derived PDAs and canonical ATAs.
 - [ ] Display principal, pending rewards, paused state, available balances, and explorer links without floating-point transaction math.

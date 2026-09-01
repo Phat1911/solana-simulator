@@ -1,0 +1,13 @@
+[package]
+name = "staking_pool"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "staking_pool"
+
+[lints]
+workspace = true

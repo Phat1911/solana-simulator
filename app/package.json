@@ -1,0 +1,15 @@
+{
+  "name": "slot-staking-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Milestone 1 placeholder for the future wallet-connected Slot Staking frontend.",
+  "scripts": {
+    "lint": "node ./scripts/check-placeholder.mjs",
+    "test": "node ./scripts/check-placeholder.mjs",
+    "build": "node ./scripts/check-placeholder.mjs"
+  },
+  "engines": {
+    "node": "22.18.0",
+    "npm": "10.9.3"
+  }
+}

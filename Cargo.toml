@@ -1,0 +1,22 @@
+[workspace]
+members = [
+    "programs/staking_pool",
+    "programs/demo_faucet",
+    "tests/litesvm",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/example/slot-staking"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"

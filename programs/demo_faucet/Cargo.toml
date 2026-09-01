@@ -1,0 +1,13 @@
+[package]
+name = "demo_faucet"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "demo_faucet"
+
+[lints]
+workspace = true
