@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 8 complete
+Status: Milestones 9-12 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -223,3 +223,39 @@ residual risk
   settle, claim, or transfer SPL tokens. Later token-moving instructions must
   preserve principal solvency, reward solvency, and rollback guarantees while
   updating these position fields.
+
+### Milestones 9-12 - Reward Funding, Stake, Normal Unstake, And Claim
+
+- Scope implemented: Added `fund_rewards`, `stake`, `unstake`, and
+  `claim_rewards` Anchor instructions with checked SPL Token Program CPIs,
+  canonical user ATA validation, Pool Authority PDA signer seeds for vault
+  outflows, pool checkpointing, position settlement, and success events.
+- Security and economic rules touched: Funding is permissionless but requires
+  the source token-account authority signer and credits budget only after a
+  successful REWARD transfer. Staking is blocked while paused, settles the
+  position before increasing principal, and preserves
+  `stake_vault.amount >= pool.total_staked`. Unstaking is allowed while paused,
+  returns principal only to the signer-owned canonical STAKE ATA, and preserves
+  pending rewards. Claiming is blocked while paused, pays only whole REWARD base
+  units to the canonical REWARD ATA, decrements allocated liability by the exact
+  paid scaled amount, and preserves fractional scaled remainder.
+- Tests run: `cargo test -p litesvm_baseline milestone9_12_token_flows --
+  --nocapture`; `cargo fmt --all -- --check`; `anchor build -p staking_pool`;
+  `cargo test --workspace`; `cargo clippy --workspace --all-targets -- -D
+  warnings`; `git diff --check`.
+- Result: Passed. Focused LiteSVM tests cover valid reward funding, direct
+  reward-vault donation as surplus only, zero and wrong-authority funding
+  failures with rollback, first stake, paused/zero/insufficient-balance stake
+  rejection, wrong stake ATA rejection, paused unstake preserving principal and
+  rewards, excessive unstake rejection, bad Pool Authority PDA rejection, claim
+  payout with double-payment prevention, paused claim rejection, wrong reward
+  account rejection, simulated insufficient backing rejection, and direct
+  principal/reward solvency assertions. The full workspace test suite passed
+  with 28 LiteSVM tests, staking math/state tests, and doc-tests.
+- Residual risk or limitation: Pause/unpause instructions, emergency
+  withdrawal, governance proposals, faucet behavior, cross-instruction
+  state-machine tests, local-validator workflows, frontend flows, and Devnet
+  smoke evidence remain future milestones. Some LiteSVM checks use direct
+  account mutation to simulate future governance states or corrupted backing;
+  later milestones should add end-to-end paths that create those states only
+  through public instructions.

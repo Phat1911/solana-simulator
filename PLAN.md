@@ -78,8 +78,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement permissionless funding from any valid reward token account whose authority signs.
-- [ ] Checkpoint before transfer, then increase unallocated scaled budget by exactly the received base units times `PRECISION`.
+- [x] Implement permissionless funding from any valid reward token account whose authority signs.
+- [x] Checkpoint before transfer, then increase unallocated scaled budget by exactly the received base units times `PRECISION`.
 - **Invariant:** Accounting credit is created only by a successful validated SPL Token transfer; direct vault donations remain surplus and funding cannot erase already earned liabilities.
 - **Verification:** LiteSVM tests cover valid third-party funding, wrong mint/vault/authority/program, direct donation behavior, rollback, and reward-solvency equations.
 
@@ -87,8 +87,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement staking from the user's canonical stake ATA after checkpointing and settling the existing position.
-- [ ] Transfer principal through the original SPL Token Program and update position and pool totals atomically.
+- [x] Implement staking from the user's canonical stake ATA after checkpointing and settling the existing position.
+- [x] Transfer principal through the original SPL Token Program and update position and pool totals atomically.
 - **Invariant:** Newly deposited principal earns no reward for earlier slots, and successful stake preserves `stake_vault.amount >= total_staked` with exact principal accounting.
 - **Verification:** LiteSVM tests cover first and repeated stake, wrong ATA/mint/vault/position, zero amount, pause rejection, insufficient balance, and rollback.
 
@@ -96,8 +96,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement partial and full unstake after checkpointing and settling rewards, including while paused.
-- [ ] Return principal only to the user's canonical stake ATA using Pool Authority signer seeds.
+- [x] Implement partial and full unstake after checkpointing and settling rewards, including while paused.
+- [x] Return principal only to the user's canonical stake ATA using Pool Authority signer seeds.
 - **Invariant:** Unstake never forfeits or pays rewards, never returns another user's principal, and decreases position stake, pool total, and vault balance by the same amount.
 - **Verification:** LiteSVM tests cover active and paused unstake, partial/full amounts, excessive amount, substituted accounts, PDA signer failure, and atomic rollback.
 
@@ -105,8 +105,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement claim to the user's canonical reward ATA after checkpointing and settling the position.
-- [ ] Transfer only whole base units, decrement scaled liability by the exact transferred amount, and retain fractional scaled remainder.
+- [x] Implement claim to the user's canonical reward ATA after checkpointing and settling the position.
+- [x] Transfer only whole base units, decrement scaled liability by the exact transferred amount, and retain fractional scaled remainder.
 - **Invariant:** A user can claim only their own allocated reward, each paid unit is removed from liability exactly once, and reward solvency holds after payout.
 - **Verification:** LiteSVM tests cover repeated claims, no-op fractional claim, wrong claimant/ATA/vault, insufficient backing, pause rejection, and rollback.
 

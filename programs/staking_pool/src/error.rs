@@ -27,4 +27,10 @@ pub enum StakingError {
     Unauthorized,
     #[msg("Position still has stake or reward accounting")]
     PositionNotEmpty,
+    #[msg("Pool is paused")]
+    PoolPaused,
+    #[msg("Position does not have enough staked principal")]
+    InsufficientStake,
+    #[msg("Reward vault cannot back the requested payout")]
+    InsufficientRewardBacking,
 }

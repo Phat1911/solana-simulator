@@ -11,12 +11,18 @@ pub mod state;
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount},
+    token::{self, Mint, Token, TokenAccount, TransferChecked},
 };
 
 use crate::{
     constants::{ADMIN_COUNT, DEVNET_MAX_REWARD_RATE_PER_SLOT, TOKEN_DECIMALS},
     error::StakingError,
+    math::{
+        checked_add_u64, checked_claimable_base_units, checked_paid_scaled,
+        checked_scale_base_units, checked_sub_scaled, checked_sub_u64, checkpoint_pool_rewards,
+        claim_position_rewards, require_positive_amount, reset_position_reward_debt,
+        settle_position_rewards, ClaimPositionInput, PoolCheckpointInput, PositionSettlementInput,
+    },
     state::{Pool, Position, POOL_AUTHORITY_SEED, POOL_SEED, POSITION_SEED, STATE_VERSION},
 };
 
@@ -148,6 +154,207 @@ pub mod staking_pool {
 
         Ok(())
     }
+
+    /// Milestone 9: checkpoint, transfer real REWARD tokens, then credit budget.
+    pub fn fund_rewards(ctx: Context<FundRewards>, amount: u64) -> Result<()> {
+        require_positive_amount(amount)?;
+        require_original_token_program(&ctx.accounts.token_program)?;
+        require_pool_vaults(&ctx.accounts.pool, &ctx.accounts.reward_vault, None)?;
+
+        checkpoint_pool(&mut ctx.accounts.pool)?;
+
+        token::transfer_checked(
+            ctx.accounts.fund_rewards_transfer_context(),
+            amount,
+            TOKEN_DECIMALS,
+        )?;
+
+        let funded_scaled = checked_scale_base_units(amount)?;
+        ctx.accounts.pool.remaining_reward_budget_scaled = crate::math::checked_add_scaled(
+            ctx.accounts.pool.remaining_reward_budget_scaled,
+            funded_scaled,
+        )?;
+
+        emit!(RewardsFunded {
+            pool: ctx.accounts.pool.key(),
+            funder: ctx.accounts.source_authority.key(),
+            source_reward_account: ctx.accounts.source_reward_account.key(),
+            amount,
+            remaining_reward_budget_scaled: ctx.accounts.pool.remaining_reward_budget_scaled,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 10: stake canonical STAKE ATA principal after checkpoint and settlement.
+    pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
+        require_positive_amount(amount)?;
+        require!(!ctx.accounts.pool.paused, StakingError::PoolPaused);
+        require_original_token_program(&ctx.accounts.token_program)?;
+        require_position_owner(
+            &ctx.accounts.position,
+            &ctx.accounts.pool,
+            &ctx.accounts.user,
+        )?;
+        require_pool_vaults(
+            &ctx.accounts.pool,
+            &ctx.accounts.reward_vault,
+            Some(&ctx.accounts.stake_vault),
+        )?;
+
+        checkpoint_pool(&mut ctx.accounts.pool)?;
+        settle_position(&mut ctx.accounts.position, &ctx.accounts.pool)?;
+
+        token::transfer_checked(
+            ctx.accounts.stake_transfer_context(),
+            amount,
+            TOKEN_DECIMALS,
+        )?;
+
+        ctx.accounts.position.staked_amount =
+            checked_add_u64(ctx.accounts.position.staked_amount, amount)?;
+        ctx.accounts.pool.total_staked = checked_add_u64(ctx.accounts.pool.total_staked, amount)?;
+        ctx.accounts.position.reward_debt_scaled = reset_position_reward_debt(
+            ctx.accounts.position.staked_amount,
+            ctx.accounts.pool.acc_reward_per_stake_scaled,
+        )?;
+
+        emit!(Staked {
+            pool: ctx.accounts.pool.key(),
+            position: ctx.accounts.position.key(),
+            owner: ctx.accounts.user.key(),
+            amount,
+            position_staked_amount: ctx.accounts.position.staked_amount,
+            total_staked: ctx.accounts.pool.total_staked,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 11: unstake principal only, preserving settled rewards.
+    pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
+        require_positive_amount(amount)?;
+        require_original_token_program(&ctx.accounts.token_program)?;
+        require_position_owner(
+            &ctx.accounts.position,
+            &ctx.accounts.pool,
+            &ctx.accounts.user,
+        )?;
+        require_pool_vaults(
+            &ctx.accounts.pool,
+            &ctx.accounts.reward_vault,
+            Some(&ctx.accounts.stake_vault),
+        )?;
+        require!(
+            ctx.accounts.position.staked_amount >= amount,
+            StakingError::InsufficientStake
+        );
+
+        checkpoint_pool(&mut ctx.accounts.pool)?;
+        settle_position(&mut ctx.accounts.position, &ctx.accounts.pool)?;
+
+        ctx.accounts.position.staked_amount =
+            checked_sub_u64(ctx.accounts.position.staked_amount, amount)?;
+        ctx.accounts.pool.total_staked = checked_sub_u64(ctx.accounts.pool.total_staked, amount)?;
+        ctx.accounts.position.reward_debt_scaled = reset_position_reward_debt(
+            ctx.accounts.position.staked_amount,
+            ctx.accounts.pool.acc_reward_per_stake_scaled,
+        )?;
+
+        let pool_key = ctx.accounts.pool.key();
+        let pool_authority_bump = [ctx.accounts.pool.pool_authority_bump];
+        let signer_seeds: &[&[&[u8]]] = &[&[
+            POOL_AUTHORITY_SEED,
+            pool_key.as_ref(),
+            pool_authority_bump.as_ref(),
+        ]];
+
+        token::transfer_checked(
+            ctx.accounts
+                .unstake_transfer_context()
+                .with_signer(signer_seeds),
+            amount,
+            TOKEN_DECIMALS,
+        )?;
+
+        emit!(Unstaked {
+            pool: ctx.accounts.pool.key(),
+            position: ctx.accounts.position.key(),
+            owner: ctx.accounts.user.key(),
+            amount,
+            position_staked_amount: ctx.accounts.position.staked_amount,
+            total_staked: ctx.accounts.pool.total_staked,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 12: claim whole REWARD base units, preserving scaled remainder.
+    pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
+        require!(!ctx.accounts.pool.paused, StakingError::PoolPaused);
+        require_original_token_program(&ctx.accounts.token_program)?;
+        require_position_owner(
+            &ctx.accounts.position,
+            &ctx.accounts.pool,
+            &ctx.accounts.user,
+        )?;
+        require_pool_vaults(&ctx.accounts.pool, &ctx.accounts.reward_vault, None)?;
+
+        checkpoint_pool(&mut ctx.accounts.pool)?;
+        settle_position(&mut ctx.accounts.position, &ctx.accounts.pool)?;
+
+        let claimable_base_units =
+            checked_claimable_base_units(ctx.accounts.position.pending_reward_scaled)?;
+        if claimable_base_units == 0 {
+            return err!(StakingError::NothingToClaim);
+        }
+        require!(
+            ctx.accounts.reward_vault.amount >= claimable_base_units,
+            StakingError::InsufficientRewardBacking
+        );
+
+        let claim_output = claim_position_rewards(ClaimPositionInput {
+            pending_reward_scaled: ctx.accounts.position.pending_reward_scaled,
+            allocated_liability_scaled: ctx.accounts.pool.allocated_liability_scaled,
+        })?;
+        let paid_scaled = checked_paid_scaled(claim_output.claimed_base_units)?;
+
+        ctx.accounts.position.pending_reward_scaled = claim_output.pending_reward_scaled;
+        ctx.accounts.pool.allocated_liability_scaled =
+            checked_sub_scaled(ctx.accounts.pool.allocated_liability_scaled, paid_scaled)?;
+
+        let pool_key = ctx.accounts.pool.key();
+        let pool_authority_bump = [ctx.accounts.pool.pool_authority_bump];
+        let signer_seeds: &[&[&[u8]]] = &[&[
+            POOL_AUTHORITY_SEED,
+            pool_key.as_ref(),
+            pool_authority_bump.as_ref(),
+        ]];
+
+        token::transfer_checked(
+            ctx.accounts
+                .claim_transfer_context()
+                .with_signer(signer_seeds),
+            claim_output.claimed_base_units,
+            TOKEN_DECIMALS,
+        )?;
+
+        emit!(RewardsClaimed {
+            pool: ctx.accounts.pool.key(),
+            position: ctx.accounts.position.key(),
+            owner: ctx.accounts.user.key(),
+            amount: claim_output.claimed_base_units,
+            paid_scaled,
+            pending_reward_scaled: ctx.accounts.position.pending_reward_scaled,
+            allocated_liability_scaled: ctx.accounts.pool.allocated_liability_scaled,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -155,6 +362,7 @@ pub mod staking_pool {
 pub struct InitializePool<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
+    // create pool account
     #[account(
         init,
         payer = initializer,
@@ -169,6 +377,7 @@ pub struct InitializePool<'info> {
     pub pool_authority: UncheckedAccount<'info>,
     pub stake_mint: Account<'info, Mint>,
     pub reward_mint: Account<'info, Mint>,
+    // create stake vault token account
     #[account(
         init,
         payer = initializer,
@@ -177,6 +386,7 @@ pub struct InitializePool<'info> {
         associated_token::token_program = token_program
     )]
     pub stake_vault: Account<'info, TokenAccount>,
+    // create reward vault token account
     #[account(
         init,
         payer = initializer,
@@ -221,6 +431,98 @@ pub struct ClosePosition<'info> {
     pub position: Account<'info, Position>,
 }
 
+#[derive(Accounts)]
+pub struct FundRewards<'info> {
+    #[account(mut)]
+    pub source_authority: Signer<'info>,
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    #[account(mut, token::mint = reward_mint, token::authority = source_authority)]
+    pub source_reward_account: Account<'info, TokenAccount>,
+    #[account(address = pool.reward_mint)]
+    pub reward_mint: Account<'info, Mint>,
+    #[account(mut, address = pool.reward_vault, token::mint = reward_mint)]
+    pub reward_vault: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct Stake<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    #[account(
+        mut,
+        seeds = [POSITION_SEED, pool.key().as_ref(), user.key().as_ref()],
+        bump = position.bump,
+    )]
+    pub position: Account<'info, Position>,
+    #[account(address = pool.stake_mint)]
+    pub stake_mint: Account<'info, Mint>,
+    #[account(address = pool.reward_mint)]
+    pub reward_mint: Account<'info, Mint>,
+    #[account(mut, associated_token::mint = stake_mint, associated_token::authority = user)]
+    pub user_stake_account: Account<'info, TokenAccount>,
+    #[account(mut, address = pool.stake_vault, token::mint = stake_mint)]
+    pub stake_vault: Account<'info, TokenAccount>,
+    #[account(mut, address = pool.reward_vault, token::mint = reward_mint)]
+    pub reward_vault: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct Unstake<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    /// CHECK: Milestone 11: canonical PDA validated by seeds and used only as token signer.
+    #[account(seeds = [POOL_AUTHORITY_SEED, pool.key().as_ref()], bump = pool.pool_authority_bump)]
+    pub pool_authority: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [POSITION_SEED, pool.key().as_ref(), user.key().as_ref()],
+        bump = position.bump,
+    )]
+    pub position: Account<'info, Position>,
+    #[account(address = pool.stake_mint)]
+    pub stake_mint: Account<'info, Mint>,
+    #[account(address = pool.reward_mint)]
+    pub reward_mint: Account<'info, Mint>,
+    #[account(mut, associated_token::mint = stake_mint, associated_token::authority = user)]
+    pub user_stake_account: Account<'info, TokenAccount>,
+    #[account(mut, address = pool.stake_vault, token::mint = stake_mint, token::authority = pool_authority)]
+    pub stake_vault: Account<'info, TokenAccount>,
+    #[account(mut, address = pool.reward_vault, token::mint = reward_mint)]
+    pub reward_vault: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimRewards<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    /// CHECK: Milestone 12: canonical PDA validated by seeds and used only as token signer.
+    #[account(seeds = [POOL_AUTHORITY_SEED, pool.key().as_ref()], bump = pool.pool_authority_bump)]
+    pub pool_authority: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [POSITION_SEED, pool.key().as_ref(), user.key().as_ref()],
+        bump = position.bump,
+    )]
+    pub position: Account<'info, Position>,
+    #[account(address = pool.reward_mint)]
+    pub reward_mint: Account<'info, Mint>,
+    #[account(mut, address = pool.reward_vault, token::mint = reward_mint, token::authority = pool_authority)]
+    pub reward_vault: Account<'info, TokenAccount>,
+    #[account(mut, associated_token::mint = reward_mint, associated_token::authority = user)]
+    pub user_reward_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
 #[event]
 pub struct PoolInitialized {
     pub pool: Pubkey,
@@ -250,6 +552,108 @@ pub struct PositionClosed {
     pub slot: u64,
 }
 
+#[event]
+pub struct RewardsFunded {
+    pub pool: Pubkey,
+    pub funder: Pubkey,
+    pub source_reward_account: Pubkey,
+    pub amount: u64,
+    pub remaining_reward_budget_scaled: u128,
+    pub slot: u64,
+}
+
+#[event]
+pub struct Staked {
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub amount: u64,
+    pub position_staked_amount: u64,
+    pub total_staked: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct Unstaked {
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub amount: u64,
+    pub position_staked_amount: u64,
+    pub total_staked: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct RewardsClaimed {
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub amount: u64,
+    pub paid_scaled: u128,
+    pub pending_reward_scaled: u128,
+    pub allocated_liability_scaled: u128,
+    pub slot: u64,
+}
+
+impl<'info> FundRewards<'info> {
+    fn fund_rewards_transfer_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            TransferChecked {
+                from: self.source_reward_account.to_account_info(),
+                mint: self.reward_mint.to_account_info(),
+                to: self.reward_vault.to_account_info(),
+                authority: self.source_authority.to_account_info(),
+            },
+        )
+    }
+}
+
+impl<'info> Stake<'info> {
+    fn stake_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            TransferChecked {
+                from: self.user_stake_account.to_account_info(),
+                mint: self.stake_mint.to_account_info(),
+                to: self.stake_vault.to_account_info(),
+                authority: self.user.to_account_info(),
+            },
+        )
+    }
+}
+
+impl<'info> Unstake<'info> {
+    fn unstake_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            TransferChecked {
+                from: self.stake_vault.to_account_info(),
+                mint: self.stake_mint.to_account_info(),
+                to: self.user_stake_account.to_account_info(),
+                authority: self.pool_authority.to_account_info(),
+            },
+        )
+    }
+}
+
+impl<'info> ClaimRewards<'info> {
+    fn claim_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            TransferChecked {
+                from: self.reward_vault.to_account_info(),
+                mint: self.reward_mint.to_account_info(),
+                to: self.user_reward_account.to_account_info(),
+                authority: self.pool_authority.to_account_info(),
+            },
+        )
+    }
+}
+
 fn require_distinct_admins(admins: &[Pubkey; ADMIN_COUNT]) -> Result<()> {
     for (index, admin) in admins.iter().enumerate() {
         require_keys_neq!(*admin, Pubkey::default(), StakingError::InvalidAdminSet);
@@ -257,6 +661,112 @@ fn require_distinct_admins(admins: &[Pubkey; ADMIN_COUNT]) -> Result<()> {
             require_keys_neq!(*admin, *previous_admin, StakingError::InvalidAdminSet);
         }
     }
+
+    Ok(())
+}
+
+fn require_original_token_program(token_program: &Program<Token>) -> Result<()> {
+    require_keys_eq!(
+        token_program.key(),
+        anchor_spl::token::ID,
+        StakingError::InvalidTokenProgram
+    );
+    Ok(())
+}
+
+fn require_position_owner(
+    position: &Account<Position>,
+    pool: &Account<Pool>,
+    user: &Signer,
+) -> Result<()> {
+    require_keys_eq!(position.pool, pool.key(), StakingError::Unauthorized);
+    require_keys_eq!(position.owner, user.key(), StakingError::Unauthorized);
+    Ok(())
+}
+
+fn require_pool_vaults(
+    pool: &Account<Pool>,
+    reward_vault: &Account<TokenAccount>,
+    stake_vault: Option<&Account<TokenAccount>>,
+) -> Result<()> {
+    let pool_key = pool.key();
+    let pool_authority = Pubkey::create_program_address(
+        &[
+            POOL_AUTHORITY_SEED,
+            pool_key.as_ref(),
+            &[pool.pool_authority_bump],
+        ],
+        &crate::ID,
+    )
+    .map_err(|_| StakingError::Unauthorized)?;
+
+    require_keys_eq!(
+        reward_vault.key(),
+        pool.reward_vault,
+        StakingError::Unauthorized
+    );
+    require_keys_eq!(
+        reward_vault.mint,
+        pool.reward_mint,
+        StakingError::Unauthorized
+    );
+    require_keys_eq!(
+        reward_vault.owner,
+        pool_authority,
+        StakingError::Unauthorized
+    );
+
+    if let Some(stake_vault) = stake_vault {
+        require_keys_eq!(
+            stake_vault.key(),
+            pool.stake_vault,
+            StakingError::Unauthorized
+        );
+        require_keys_eq!(
+            stake_vault.mint,
+            pool.stake_mint,
+            StakingError::Unauthorized
+        );
+        require_keys_eq!(
+            stake_vault.owner,
+            pool_authority,
+            StakingError::Unauthorized
+        );
+    }
+
+    Ok(())
+}
+
+fn checkpoint_pool(pool: &mut Account<Pool>) -> Result<()> {
+    let checkpoint = checkpoint_pool_rewards(PoolCheckpointInput {
+        current_slot: Clock::get()?.slot,
+        last_update_slot: pool.last_update_slot,
+        reward_rate_per_slot_base_units: pool.reward_rate_per_slot,
+        total_staked_base_units: pool.total_staked,
+        acc_reward_per_stake_scaled: pool.acc_reward_per_stake_scaled,
+        remaining_reward_budget_scaled: pool.remaining_reward_budget_scaled,
+        allocated_liability_scaled: pool.allocated_liability_scaled,
+        paused: pool.paused,
+    })?;
+
+    pool.acc_reward_per_stake_scaled = checkpoint.acc_reward_per_stake_scaled;
+    pool.remaining_reward_budget_scaled = checkpoint.remaining_reward_budget_scaled;
+    pool.allocated_liability_scaled = checkpoint.allocated_liability_scaled;
+    pool.last_update_slot = checkpoint.last_update_slot;
+
+    Ok(())
+}
+
+fn settle_position(position: &mut Account<Position>, pool: &Account<Pool>) -> Result<()> {
+    let settlement = settle_position_rewards(PositionSettlementInput {
+        staked_amount_base_units: position.staked_amount,
+        reward_debt_scaled: position.reward_debt_scaled,
+        pending_reward_scaled: position.pending_reward_scaled,
+        acc_reward_per_stake_scaled: pool.acc_reward_per_stake_scaled,
+    })?;
+
+    position.pending_reward_scaled = settlement.pending_reward_scaled;
+    position.reward_debt_scaled = settlement.reward_debt_scaled;
 
     Ok(())
 }
