@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1, 2, 3, 4, and 5 are complete. The repository now has the baseline
+Milestones 1, 2, 3, 4, 5, and 6 are complete. The repository now has the baseline
 workspace, empty staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -21,9 +21,11 @@ slot-based emissions, funded-budget caps, pause gaps, zero-stake checkpoints,
 exhaustion, partial final emission, and scaled rounding remainders. Position
 settlement and claim math now preserve reward debt, pending scaled rewards,
 whole-token claims, fractional carry, and emergency forfeiture conservation.
+The staking program now defines fixed-size Anchor-serializable Pool, Position,
+and Proposal account schemas plus canonical PDA derivation helpers.
 
-No account or token-transfer behavior is implemented yet. Account schemas, SPL
-Token CPIs, governance, faucet claims, frontend wallet flows, and Devnet
+No instruction handler or token-transfer behavior is implemented yet. SPL Token
+CPIs, governance execution, faucet claims, frontend wallet flows, and Devnet
 deployment remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).

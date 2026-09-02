@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 5 complete
+Status: Milestone 6 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -149,3 +149,24 @@ residual risk
   handlers must call these helpers after checkpointing, perform SPL Token
   transfers atomically, reject paused claims, validate canonical user accounts,
   and check real reward-vault backing before payout.
+
+### Milestone 6 - Staking Account Schemas And PDA Recipes
+
+- Scope implemented: Added milestone-marked Anchor-serializable fixed-size
+  `Pool`, `Position`, and `Proposal` state layouts, the allowlisted
+  `ProposalAction` enum, account space constants including Anchor's
+  discriminator, and canonical PDA derivation helpers for pool, pool authority,
+  position, and proposal addresses.
+- Security and economic rules touched: State now stores pool identity,
+  immutable mint and vault relationships, admin epoch and proposal data,
+  position owner and pool binding, reward accumulator, funded budget, and
+  allocated liability fields needed by later instruction handlers.
+- Tests run: `cargo test -p staking_pool --test state_pda`.
+- Result: Passed. Focused tests cover exact seed prefixes, little-endian integer
+  seed encoding, deterministic PDA derivation, separation across initializers,
+  pool IDs, program IDs, pools, users, and proposal IDs, and fixed account
+  sizes for Pool, Position, Proposal, and ProposalAction.
+- Residual risk or limitation: This milestone defines schemas and derivation
+  recipes only. Later Anchor handlers must still enforce account owners,
+  discriminators, stored-key relationships, signer authorization, token program
+  identity, vault authority, mint configuration, and atomic state/token updates.

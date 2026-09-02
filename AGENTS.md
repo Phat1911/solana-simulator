@@ -89,3 +89,5 @@ AUDIT.md                 Living self-audit and test evidence
 6. Format, compile, and run the milestone's required tests. Investigate failures instead of weakening assertions.
 7. Update `PLAN.md` status and `AUDIT.md` evidence, then report changed files, test results, and known limitations.
 8. Do not combine or skip core milestones unless the user explicitly asks. Stop and ask when an implementation choice would alter an approved rule.
+9. Commit, and push the change onto github. You can totally use 
+``git add . && git commit -m "<some_commit_content>" && git push origin main`` on wsl environment.

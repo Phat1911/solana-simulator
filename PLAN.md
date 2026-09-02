@@ -51,8 +51,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Define versioned, fixed-size `Pool`, `Position`, and `Proposal` layouts plus all canonical PDA derivations. The Pool Authority PDA has no data account.
-- [ ] Encode immutable mint/vault relationships, admin epoch, proposal action data, and position ownership.
+- [x] Define versioned, fixed-size `Pool`, `Position`, and `Proposal` layouts plus all canonical PDA derivations. The Pool Authority PDA has no data account.
+- [x] Encode immutable mint/vault relationships, admin epoch, proposal action data, and position ownership.
 - **Invariant:** Every state account has one canonical address for its semantic identity, and account substitution across pools, users, or proposals is rejected.
 - **Verification:** PDA derivation and account-size tests prove deterministic addresses and separation between pools, users, and proposal IDs.
 

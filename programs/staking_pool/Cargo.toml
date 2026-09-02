@@ -9,5 +9,8 @@ repository.workspace = true
 crate-type = ["cdylib", "lib"]
 name = "staking_pool"
 
+[dependencies]
+anchor-lang = "0.31.1"
+
 [lints]
 workspace = true

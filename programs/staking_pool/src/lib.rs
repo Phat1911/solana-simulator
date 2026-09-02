@@ -9,6 +9,7 @@
 pub mod constants;
 pub mod error;
 pub mod math;
+pub mod state;
 
 pub const PROGRAM_NAME: &str = "staking_pool";
 pub const PROGRAM_VERSION: u8 = 1;
