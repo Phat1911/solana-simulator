@@ -11,6 +11,10 @@ name = "staking_pool"
 
 [dependencies]
 anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
+
+[features]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [lints]
 workspace = true

@@ -12,7 +12,8 @@ pub const POOL_AUTHORITY_SEED: &[u8] = b"pool-authority";
 pub const POSITION_SEED: &[u8] = b"position";
 pub const PROPOSAL_SEED: &[u8] = b"proposal";
 
-#[derive(Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize, InitSpace)]
+#[account]
+#[derive(Debug, PartialEq, Eq, InitSpace)]
 pub struct Pool {
     pub version: u8,
     pub initializer: Pubkey,
@@ -41,7 +42,8 @@ impl Pool {
     pub const SPACE: usize = ANCHOR_DISCRIMINATOR_SIZE + Self::LEN;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize, InitSpace)]
+#[account]
+#[derive(Debug, PartialEq, Eq, InitSpace)]
 pub struct Position {
     pub version: u8,
     pub pool: Pubkey,
@@ -73,7 +75,8 @@ impl ProposalAction {
     pub const MAX_SIZE: usize = <Self as Space>::INIT_SPACE;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, AnchorSerialize, AnchorDeserialize, InitSpace)]
+#[account]
+#[derive(Debug, PartialEq, Eq, InitSpace)]
 pub struct Proposal {
     pub version: u8,
     pub pool: Pubkey,

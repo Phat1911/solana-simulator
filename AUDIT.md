@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 6 complete
+Status: Milestone 7 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -35,16 +35,20 @@ residual risk
 ## Baseline Tool Observations
 
 - Original Windows PATH observation: `rustc 1.93.0`, `cargo 1.93.0`
-- Pinned Rust toolchain for project compatibility: `1.86.0`
-- WSL `crypto` verification: `rustc 1.86.0`, `cargo 1.86.0`,
-  `anchor-cli 0.31.1`, `solana-cli 2.1.21`
+- Rust toolchain policy updated after Milestone 6: `stable` via
+  `rust-toolchain.toml`, so current dependency tests can use modern crates.
+- Latest observed WSL `crypto` stable toolchain: `rustc 1.98.0`, `cargo 1.98.0`.
+- WSL `crypto` Anchor/Solana verification: `anchor-cli 0.31.1`,
+  `solana-cli 2.1.21`
+- Anchor SBF build compatibility: selected transitive dependencies are pinned
+  in `Cargo.lock` to versions accepted by Solana's SBF Rust 1.79 toolchain
+  while the host project continues to use Rust `stable`.
 - Anchor CLI target in `Anchor.toml`: `0.31.1`
 - Solana CLI target in `Anchor.toml`: `2.1.21`
 - Node/npm available on PATH: Node `22.18.0`, npm `10.9.3`
-- Local limitation: rustup shims cannot create temp files under
-  `C:\Users\HONG PHAT\.rustup\tmp` in this sandbox, so Rust verification was
-  run through the installed stable toolchain binaries with `RUSTC` and
-  `RUSTDOC` set directly.
+- Historical local limitation: rustup shims could not create temp files under
+  `C:\Users\HONG PHAT\.rustup\tmp` in the original Windows sandbox, so early
+  Rust verification used direct stable toolchain binaries.
 - Recommended local environment: WSL `crypto`, with the project copied under
   `/home/hong_phat/projects/rust-smc`.
 
@@ -170,3 +174,31 @@ residual risk
   recipes only. Later Anchor handlers must still enforce account owners,
   discriminators, stored-key relationships, signer authorization, token program
   identity, vault authority, mint configuration, and atomic state/token updates.
+
+### Milestone 7 - Pool Initialization And Vault Authority
+
+- Scope implemented: Added the `initialize_pool` Anchor instruction, `Pool`
+  Anchor account discriminators, associated-token vault creation, original SPL
+  Token Program wiring, and a `PoolInitialized` event emitted only after
+  successful initialization.
+- Security and economic rules touched: Initialization requires three distinct
+  non-default admins, distinct six-decimal stake and reward mints, a configured
+  maximum reward rate no higher than the Devnet cap, canonical Pool PDA seeds,
+  and the canonical Pool Authority PDA as owner of both vault ATAs. New pools
+  start paused with `reward_rate_per_slot = 0`, `total_staked = 0`, and empty
+  reward budget/liability fields.
+- Tests run: `cargo fmt --all -- --check`; `anchor build -p staking_pool`;
+  `cargo test -p staking_pool --test state_pda`; `cargo test -p
+  litesvm_baseline milestone7_initialize_pool -- --nocapture`; `cargo test
+  --workspace`; `cargo clippy --workspace --all-targets -- -D warnings`; `git
+  diff --check`.
+- Result: Passed after pinning transitive crates such as `indexmap`,
+  `unicode-segmentation`, `blake3`, `zeroize`, `zeroize_derive`, and
+  `proc-macro-crate` to versions compatible with Anchor's Solana SBF build
+  toolchain. LiteSVM tests cover valid initialization, duplicate admins, wrong
+  mint decimals, same stake/reward mint, excessive maximum reward rate,
+  non-canonical Pool Authority PDA, and duplicate initialization.
+- Residual risk or limitation: This milestone creates and validates the pool
+  and vault accounts only. Later handlers must still implement token funding,
+  staking, withdrawal, claim, pause/governance, real vault solvency checks, and
+  adversarial account substitution coverage for every token-moving instruction.

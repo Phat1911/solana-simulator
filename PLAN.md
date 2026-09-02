@@ -60,8 +60,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement pool initialization with three distinct admins, threshold two, original Token Program checks, and separate SPL Token vaults controlled by the Pool Authority PDA.
-- [ ] Require distinct six-decimal stake and reward mints; start paused with rate zero and immutable maximum rate.
+- [x] Implement pool initialization with three distinct admins, threshold two, original Token Program checks, and separate SPL Token vaults controlled by the Pool Authority PDA.
+- [x] Require distinct six-decimal stake and reward mints; start paused with rate zero and immutable maximum rate.
 - **Invariant:** No human keypair, including an admin, can sign directly for a vault outflow; pool configuration is canonical and begins in a non-emitting state.
 - **Verification:** LiteSVM tests cover valid initialization, duplicate admins, wrong decimals, same mint, wrong token program, wrong vault authority, and duplicate initialization.
 

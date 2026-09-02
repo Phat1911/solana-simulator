@@ -9,5 +9,11 @@ repository.workspace = true
 crate-type = ["cdylib", "lib"]
 name = "demo_faucet"
 
+[dependencies]
+anchor-lang = "0.31.1"
+
+[features]
+idl-build = ["anchor-lang/idl-build"]
+
 [lints]
 workspace = true

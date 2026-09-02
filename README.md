@@ -12,8 +12,8 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1, 2, 3, 4, 5, and 6 are complete. The repository now has the baseline
-workspace, empty staking and faucet program crates, placeholder frontend and
+Milestones 1, 2, 3, 4, 5, 6, and 7 are complete. The repository now has the baseline
+workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
 scaled reward units. It also has pure global reward checkpoint math for
@@ -22,11 +22,14 @@ exhaustion, partial final emission, and scaled rounding remainders. Position
 settlement and claim math now preserve reward debt, pending scaled rewards,
 whole-token claims, fractional carry, and emergency forfeiture conservation.
 The staking program now defines fixed-size Anchor-serializable Pool, Position,
-and Proposal account schemas plus canonical PDA derivation helpers.
+and Proposal account schemas plus canonical PDA derivation helpers. Pool
+initialization now creates the canonical Pool PDA and Pool Authority-owned stake
+and reward vault ATAs, validates three distinct admins, distinct six-decimal
+mints, the original SPL Token Program, and starts each pool paused with reward
+emission set to zero.
 
-No instruction handler or token-transfer behavior is implemented yet. SPL Token
-CPIs, governance execution, faucet claims, frontend wallet flows, and Devnet
-deployment remain planned work.
+Stake, unstake, claim, governance execution, faucet claims, frontend wallet
+flows, and Devnet deployment remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -114,17 +117,18 @@ The Stake and Reward Vaults are canonical ATAs owned by the Pool Authority PDA. 
 - Tailwind CSS
 - Vitest, Testing Library, and Playwright
 
-Package and toolchain versions are pinned in the baseline workspace:
+Package and toolchain versions are documented in the baseline workspace:
 
-- Rust toolchain: `1.86.0`
+- Rust toolchain: `stable` via `rust-toolchain.toml`
 - Anchor CLI target: `0.31.1`
 - Solana CLI target: `2.1.21`
 - Node.js target: `22.18.0`
 - npm target: `10.9.3`
 
-The WSL `crypto` environment has the pinned Rust, Anchor, and Solana toolchains
-available. The original Windows workspace still has a rustup shim temp-file
-limitation, so WSL is the recommended development environment.
+The WSL `crypto` environment has the Rust stable toolchain plus the pinned
+Anchor and Solana toolchains available. The original Windows workspace still
+has a rustup shim temp-file limitation, so WSL is the recommended development
+environment.
 
 ## Testing
 

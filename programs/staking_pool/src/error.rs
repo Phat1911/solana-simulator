@@ -1,9 +1,26 @@
-//! Milestone 3: explicit pure-math errors used before Anchor errors exist.
+//! Milestone 3: explicit staking errors shared by pure math and Anchor handlers.
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use anchor_lang::prelude::*;
+
+#[error_code]
+#[derive(PartialEq, Eq)]
 pub enum StakingError {
+    #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+    #[msg("Arithmetic underflow")]
     ArithmeticUnderflow,
+    #[msg("Amount must be greater than zero")]
     InvalidAmount,
+    #[msg("Token mint must use exactly six decimals")]
+    InvalidTokenDecimals,
+    #[msg("Admin set must contain exactly three distinct non-default keys")]
+    InvalidAdminSet,
+    #[msg("Stake and reward mints must be distinct")]
+    InvalidMintPair,
+    #[msg("Only the original SPL Token Program is supported")]
+    InvalidTokenProgram,
+    #[msg("Reward rate is above the configured Devnet maximum")]
+    RewardRateAboveMaximum,
+    #[msg("No whole reward base units are claimable")]
     NothingToClaim,
 }

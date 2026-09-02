@@ -7,6 +7,9 @@
 //! today without introducing protocol behavior.
 
 #[cfg(test)]
+mod milestone7_initialize_pool;
+
+#[cfg(test)]
 mod tests {
     #[test]
     fn harness_can_link_program_crates() {
