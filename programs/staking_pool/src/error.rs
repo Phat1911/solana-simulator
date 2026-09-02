@@ -5,4 +5,5 @@ pub enum StakingError {
     ArithmeticOverflow,
     ArithmeticUnderflow,
     InvalidAmount,
+    NothingToClaim,
 }

@@ -27,6 +27,51 @@ pub struct PoolCheckpointOutput {
     pub last_update_slot: u64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PositionSettlementInput {
+    pub staked_amount_base_units: u64,
+    pub reward_debt_scaled: u128,
+    pub pending_reward_scaled: u128,
+    pub acc_reward_per_stake_scaled: u128,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PositionSettlementOutput {
+    pub accrued_scaled: u128,
+    pub newly_earned_scaled: u128,
+    pub pending_reward_scaled: u128,
+    pub reward_debt_scaled: u128,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClaimPositionInput {
+    pub pending_reward_scaled: u128,
+    pub allocated_liability_scaled: u128,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClaimPositionOutput {
+    pub claimed_base_units: u64,
+    pub paid_scaled: u128,
+    pub pending_reward_scaled: u128,
+    pub allocated_liability_scaled: u128,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ForfeitPositionInput {
+    pub pending_reward_scaled: u128,
+    pub remaining_reward_budget_scaled: u128,
+    pub allocated_liability_scaled: u128,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ForfeitPositionOutput {
+    pub forfeited_scaled: u128,
+    pub pending_reward_scaled: u128,
+    pub remaining_reward_budget_scaled: u128,
+    pub allocated_liability_scaled: u128,
+}
+
 pub fn require_positive_amount(amount: u64) -> StakingResult<u64> {
     if amount == 0 {
         Err(StakingError::InvalidAmount)
@@ -73,6 +118,15 @@ pub fn checked_emission_scaled(
 ) -> StakingResult<u128> {
     checked_mul_u64_to_u128(elapsed_slots, reward_rate_per_slot_base_units)?
         .checked_mul(REWARD_PRECISION)
+        .ok_or(StakingError::ArithmeticOverflow)
+}
+
+pub fn checked_position_reward_debt(
+    staked_amount_base_units: u64,
+    acc_reward_per_stake_scaled: u128,
+) -> StakingResult<u128> {
+    u128::from(staked_amount_base_units)
+        .checked_mul(acc_reward_per_stake_scaled)
         .ok_or(StakingError::ArithmeticOverflow)
 }
 
@@ -130,12 +184,79 @@ pub fn checkpoint_pool_rewards(input: PoolCheckpointInput) -> StakingResult<Pool
     })
 }
 
+/// Milestone 5: settle one position against the latest pool accumulator.
+pub fn settle_position_rewards(
+    input: PositionSettlementInput,
+) -> StakingResult<PositionSettlementOutput> {
+    let accrued_scaled = checked_position_reward_debt(
+        input.staked_amount_base_units,
+        input.acc_reward_per_stake_scaled,
+    )?;
+    let newly_earned_scaled = checked_sub_scaled(accrued_scaled, input.reward_debt_scaled)?;
+
+    Ok(PositionSettlementOutput {
+        accrued_scaled,
+        newly_earned_scaled,
+        pending_reward_scaled: checked_add_scaled(
+            input.pending_reward_scaled,
+            newly_earned_scaled,
+        )?,
+        reward_debt_scaled: accrued_scaled,
+    })
+}
+
+/// Milestone 5: after a stake balance change, reset debt to the current accumulator.
+pub fn reset_position_reward_debt(
+    staked_amount_base_units: u64,
+    acc_reward_per_stake_scaled: u128,
+) -> StakingResult<u128> {
+    checked_position_reward_debt(staked_amount_base_units, acc_reward_per_stake_scaled)
+}
+
 pub fn checked_claimable_base_units(pending_reward_scaled: u128) -> StakingResult<u64> {
     checked_u128_to_u64(pending_reward_scaled / REWARD_PRECISION)
 }
 
 pub fn checked_paid_scaled(claimable_base_units: u64) -> StakingResult<u128> {
     checked_scale_base_units(claimable_base_units)
+}
+
+/// Milestone 5: apply a whole-unit claim while preserving scaled fractional dust.
+pub fn claim_position_rewards(input: ClaimPositionInput) -> StakingResult<ClaimPositionOutput> {
+    let claimed_base_units = checked_claimable_base_units(input.pending_reward_scaled)?;
+    if claimed_base_units == 0 {
+        return Err(StakingError::NothingToClaim);
+    }
+
+    let paid_scaled = checked_paid_scaled(claimed_base_units)?;
+
+    Ok(ClaimPositionOutput {
+        claimed_base_units,
+        paid_scaled,
+        pending_reward_scaled: checked_sub_scaled(input.pending_reward_scaled, paid_scaled)?,
+        allocated_liability_scaled: checked_sub_scaled(
+            input.allocated_liability_scaled,
+            paid_scaled,
+        )?,
+    })
+}
+
+/// Milestone 5: emergency forfeiture recycles the full scaled pending reward.
+pub fn forfeit_position_rewards(
+    input: ForfeitPositionInput,
+) -> StakingResult<ForfeitPositionOutput> {
+    Ok(ForfeitPositionOutput {
+        forfeited_scaled: input.pending_reward_scaled,
+        pending_reward_scaled: 0,
+        remaining_reward_budget_scaled: checked_add_scaled(
+            input.remaining_reward_budget_scaled,
+            input.pending_reward_scaled,
+        )?,
+        allocated_liability_scaled: checked_sub_scaled(
+            input.allocated_liability_scaled,
+            input.pending_reward_scaled,
+        )?,
+    })
 }
 
 pub fn checked_u128_to_u64(value: u128) -> StakingResult<u64> {

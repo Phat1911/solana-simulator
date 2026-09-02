@@ -12,13 +12,15 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1, 2, 3, and 4 are complete. The repository now has the baseline
+Milestones 1, 2, 3, 4, and 5 are complete. The repository now has the baseline
 workspace, empty staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
 scaled reward units. It also has pure global reward checkpoint math for
 slot-based emissions, funded-budget caps, pause gaps, zero-stake checkpoints,
-exhaustion, partial final emission, and scaled rounding remainders.
+exhaustion, partial final emission, and scaled rounding remainders. Position
+settlement and claim math now preserve reward debt, pending scaled rewards,
+whole-token claims, fractional carry, and emergency forfeiture conservation.
 
 No account or token-transfer behavior is implemented yet. Account schemas, SPL
 Token CPIs, governance, faucet claims, frontend wallet flows, and Devnet

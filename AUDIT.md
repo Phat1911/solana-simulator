@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 4 complete  
+Status: Milestone 5 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -125,3 +125,27 @@ residual risk
   handlers must read `Clock.slot`, persist the returned pool fields atomically,
   enforce account relationships, and preserve reward solvency against real SPL
   Token vault balances.
+
+### Milestone 5 - Position Settlement And Claim Math
+
+- Scope implemented: Added milestone-marked pure position settlement,
+  reward-debt reset, whole-unit claim, and emergency-forfeiture accounting
+  helpers. The functions operate only on integer base units and scaled `u128`
+  reward values.
+- Security and economic rules touched: Repeated settlement at the same
+  accumulator creates no new reward, staggered entrants receive no backpay,
+  claims pay only whole base units while preserving scaled fractional
+  remainders, and emergency forfeiture moves exactly the position's pending
+  scaled liability from allocated liability back to the remaining reward
+  budget.
+- Tests run: `cargo fmt --all -- --check`; `cargo test -p staking_pool --test
+  position_math`; `cargo clippy --workspace --all-targets -- -D warnings`;
+  `cargo test --workspace`.
+- Result: Passed. Focused tests cover multiple users, staggered entry,
+  repeated settlement, partial-token claims, post-claim accrual, forfeiture
+  conservation, fractional-only claim rejection, and arithmetic
+  overflow/underflow boundaries.
+- Residual risk or limitation: This remains pure math only. Later Anchor
+  handlers must call these helpers after checkpointing, perform SPL Token
+  transfers atomically, reject paused claims, validate canonical user accounts,
+  and check real reward-vault backing before payout.

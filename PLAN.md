@@ -42,8 +42,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement pure position settlement, reward debt updates, pending rewards, claimable whole tokens, and scaled remainder preservation.
-- [ ] Implement the accounting effect of normal claim and emergency forfeiture.
+- [x] Implement pure position settlement, reward debt updates, pending rewards, claimable whole tokens, and scaled remainder preservation.
+- [x] Implement the accounting effect of normal claim and emergency forfeiture.
 - **Invariant:** Settling repeatedly at the same accumulator creates no reward; claims cannot exceed allocated liability; fractional rewards are preserved; forfeiture returns exactly the position's pending scaled liability to the unallocated reserve.
 - **Verification:** Unit tests cover multiple users, staggered entry, repeated settlement, partial-token claims, post-claim accrual, and forfeiture conservation.
 
