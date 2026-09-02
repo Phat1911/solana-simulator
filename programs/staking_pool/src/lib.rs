@@ -17,7 +17,7 @@ use anchor_spl::{
 use crate::{
     constants::{ADMIN_COUNT, DEVNET_MAX_REWARD_RATE_PER_SLOT, TOKEN_DECIMALS},
     error::StakingError,
-    state::{Pool, POOL_AUTHORITY_SEED, POOL_SEED, STATE_VERSION},
+    state::{Pool, Position, POOL_AUTHORITY_SEED, POOL_SEED, POSITION_SEED, STATE_VERSION},
 };
 
 declare_id!("Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ");
@@ -97,6 +97,57 @@ pub mod staking_pool {
 
         Ok(())
     }
+
+    /// Milestone 8: create one canonical empty position for a user in a pool.
+    pub fn open_position(ctx: Context<OpenPosition>) -> Result<()> {
+        let position = &mut ctx.accounts.position;
+        position.version = STATE_VERSION;
+        position.pool = ctx.accounts.pool.key();
+        position.owner = ctx.accounts.user.key();
+        position.bump = ctx.bumps.position;
+        position.staked_amount = 0;
+        position.reward_debt_scaled = 0;
+        position.pending_reward_scaled = 0;
+
+        emit!(PositionOpened {
+            pool: position.pool,
+            position: position.key(),
+            owner: position.owner,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 8: close only an empty, reward-free position owned by signer.
+    pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
+        let position = &ctx.accounts.position;
+        require_keys_eq!(
+            position.owner,
+            ctx.accounts.user.key(),
+            StakingError::Unauthorized
+        );
+        require_keys_eq!(
+            position.pool,
+            ctx.accounts.pool.key(),
+            StakingError::Unauthorized
+        );
+        require!(
+            position.staked_amount == 0
+                && position.reward_debt_scaled == 0
+                && position.pending_reward_scaled == 0,
+            StakingError::PositionNotEmpty
+        );
+
+        emit!(PositionClosed {
+            pool: position.pool,
+            position: position.key(),
+            owner: position.owner,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -140,6 +191,36 @@ pub struct InitializePool<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
+#[derive(Accounts)]
+pub struct OpenPosition<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub pool: Account<'info, Pool>,
+    #[account(
+        init,
+        payer = user,
+        space = Position::SPACE,
+        seeds = [POSITION_SEED, pool.key().as_ref(), user.key().as_ref()],
+        bump
+    )]
+    pub position: Account<'info, Position>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ClosePosition<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub pool: Account<'info, Pool>,
+    #[account(
+        mut,
+        close = user,
+        seeds = [POSITION_SEED, pool.key().as_ref(), user.key().as_ref()],
+        bump = position.bump,
+    )]
+    pub position: Account<'info, Position>,
+}
+
 #[event]
 pub struct PoolInitialized {
     pub pool: Pubkey,
@@ -150,6 +231,22 @@ pub struct PoolInitialized {
     pub stake_vault: Pubkey,
     pub reward_vault: Pubkey,
     pub max_reward_rate_per_slot: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct PositionOpened {
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub slot: u64,
+}
+
+#[event]
+pub struct PositionClosed {
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
     pub slot: u64,
 }
 

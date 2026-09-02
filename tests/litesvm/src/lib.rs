@@ -10,6 +10,9 @@
 mod milestone7_initialize_pool;
 
 #[cfg(test)]
+mod milestone8_position_lifecycle;
+
+#[cfg(test)]
 mod tests {
     #[test]
     fn harness_can_link_program_crates() {

@@ -23,4 +23,8 @@ pub enum StakingError {
     RewardRateAboveMaximum,
     #[msg("No whole reward base units are claimable")]
     NothingToClaim,
+    #[msg("Signer is not authorized for this account")]
+    Unauthorized,
+    #[msg("Position still has stake or reward accounting")]
+    PositionNotEmpty,
 }

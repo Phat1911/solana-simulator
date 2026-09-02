@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 7 complete
+Status: Milestone 8 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -202,3 +202,24 @@ residual risk
   and vault accounts only. Later handlers must still implement token funding,
   staking, withdrawal, claim, pause/governance, real vault solvency checks, and
   adversarial account substitution coverage for every token-moving instruction.
+
+### Milestone 8 - Position Open And Close Lifecycle
+
+- Scope implemented: Added `open_position` and `close_position` Anchor
+  instructions, canonical Position PDA initialization, signer-owned safe
+  closure, and `PositionOpened`/`PositionClosed` events.
+- Security and economic rules touched: Each user can create only the canonical
+  Position PDA for one `(pool, user)` pair. Closure requires the signer-bound
+  canonical position and rejects any nonzero `staked_amount`,
+  `reward_debt_scaled`, or `pending_reward_scaled`, so account closure cannot
+  erase principal or reward accounting.
+- Tests run: `anchor build -p staking_pool`; `cargo test -p litesvm_baseline
+  milestone8_position_lifecycle -- --nocapture`.
+- Result: Passed. LiteSVM tests cover canonical creation, duplicate creation,
+  wrong position seed, wrong pool seed, user/pool separation, unauthorized
+  close, non-empty stake, pending reward, reward debt, and successful empty
+  close with the account drained and rent returned.
+- Residual risk or limitation: Position lifecycle does not yet stake, unstake,
+  settle, claim, or transfer SPL tokens. Later token-moving instructions must
+  preserve principal solvency, reward solvency, and rollback guarantees while
+  updating these position fields.

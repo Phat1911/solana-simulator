@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1, 2, 3, 4, 5, 6, and 7 are complete. The repository now has the baseline
+Milestones 1 through 8 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -26,7 +26,8 @@ and Proposal account schemas plus canonical PDA derivation helpers. Pool
 initialization now creates the canonical Pool PDA and Pool Authority-owned stake
 and reward vault ATAs, validates three distinct admins, distinct six-decimal
 mints, the original SPL Token Program, and starts each pool paused with reward
-emission set to zero.
+emission set to zero. Users can now open their canonical Position PDA for a
+pool, and can close it only when it contains no stake or reward accounting.
 
 Stake, unstake, claim, governance execution, faucet claims, frontend wallet
 flows, and Devnet deployment remain planned work.

@@ -69,8 +69,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement permissionless opening of the canonical user position and safe closure by its owning user.
-- [ ] Permit closure only when stake, pending reward, reward debt, and scaled remainder are all zero.
+- [x] Implement permissionless opening of the canonical user position and safe closure by its owning user.
+- [x] Permit closure only when stake, pending reward, reward debt, and scaled remainder are all zero.
 - **Invariant:** One user has at most one position per pool, another signer cannot control it, and closing an account cannot erase principal or reward liability.
 - **Verification:** LiteSVM tests cover canonical creation, duplicate creation, wrong user/pool seeds, unauthorized close, non-empty close, and successful empty close.
 
