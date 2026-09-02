@@ -33,8 +33,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement the pure calculation for elapsed slots, desired emission, partial final emission, budget reduction, and `acc_reward_per_share_scaled` growth.
-- [ ] Model paused, zero-stake, and exhausted-budget checkpoints without account access or CPIs.
+- [x] Implement the pure calculation for elapsed slots, desired emission, partial final emission, budget reduction, and `acc_reward_per_share_scaled` growth.
+- [x] Model paused, zero-stake, and exhausted-budget checkpoints without account access or CPIs.
 - **Invariant:** A checkpoint emits at most the unallocated funded budget; it emits nothing while paused, with zero total stake, or after exhaustion; `last_update_slot` advances without retroactive accrual.
 - **Verification:** Table-driven unit tests cover normal accrual, zero stake, pause gaps, exact exhaustion, partial final emission, and rounding remainder.
 

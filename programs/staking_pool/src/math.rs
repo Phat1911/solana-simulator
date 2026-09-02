@@ -5,6 +5,28 @@ use crate::error::StakingError;
 
 pub type StakingResult<T> = Result<T, StakingError>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PoolCheckpointInput {
+    pub current_slot: u64,
+    pub last_update_slot: u64,
+    pub reward_rate_per_slot_base_units: u64,
+    pub total_staked_base_units: u64,
+    pub acc_reward_per_stake_scaled: u128,
+    pub remaining_reward_budget_scaled: u128,
+    pub allocated_liability_scaled: u128,
+    pub paused: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PoolCheckpointOutput {
+    pub elapsed_slots: u64,
+    pub emitted_scaled: u128,
+    pub acc_reward_per_stake_scaled: u128,
+    pub remaining_reward_budget_scaled: u128,
+    pub allocated_liability_scaled: u128,
+    pub last_update_slot: u64,
+}
+
 pub fn require_positive_amount(amount: u64) -> StakingResult<u64> {
     if amount == 0 {
         Err(StakingError::InvalidAmount)
@@ -52,6 +74,60 @@ pub fn checked_emission_scaled(
     checked_mul_u64_to_u128(elapsed_slots, reward_rate_per_slot_base_units)?
         .checked_mul(REWARD_PRECISION)
         .ok_or(StakingError::ArithmeticOverflow)
+}
+
+/// Milestone 4: pure global reward checkpoint math; account validation lives in handlers.
+pub fn checkpoint_pool_rewards(input: PoolCheckpointInput) -> StakingResult<PoolCheckpointOutput> {
+    let elapsed_slots = checked_sub_u64(input.current_slot, input.last_update_slot)?;
+
+    if input.paused {
+        return Ok(PoolCheckpointOutput {
+            elapsed_slots,
+            emitted_scaled: 0,
+            acc_reward_per_stake_scaled: input.acc_reward_per_stake_scaled,
+            remaining_reward_budget_scaled: input.remaining_reward_budget_scaled,
+            allocated_liability_scaled: input.allocated_liability_scaled,
+            last_update_slot: input.current_slot,
+        });
+    }
+
+    let wanted_scaled =
+        checked_emission_scaled(elapsed_slots, input.reward_rate_per_slot_base_units)?;
+    let candidate_scaled = wanted_scaled.min(input.remaining_reward_budget_scaled);
+
+    if input.total_staked_base_units == 0 || candidate_scaled == 0 {
+        return Ok(PoolCheckpointOutput {
+            elapsed_slots,
+            emitted_scaled: 0,
+            acc_reward_per_stake_scaled: input.acc_reward_per_stake_scaled,
+            remaining_reward_budget_scaled: input.remaining_reward_budget_scaled,
+            allocated_liability_scaled: input.allocated_liability_scaled,
+            last_update_slot: input.current_slot,
+        });
+    }
+
+    let delta_acc = candidate_scaled / u128::from(input.total_staked_base_units);
+    let distributed_scaled = delta_acc
+        .checked_mul(u128::from(input.total_staked_base_units))
+        .ok_or(StakingError::ArithmeticOverflow)?;
+
+    Ok(PoolCheckpointOutput {
+        elapsed_slots,
+        emitted_scaled: distributed_scaled,
+        acc_reward_per_stake_scaled: checked_add_scaled(
+            input.acc_reward_per_stake_scaled,
+            delta_acc,
+        )?,
+        remaining_reward_budget_scaled: checked_sub_scaled(
+            input.remaining_reward_budget_scaled,
+            distributed_scaled,
+        )?,
+        allocated_liability_scaled: checked_add_scaled(
+            input.allocated_liability_scaled,
+            distributed_scaled,
+        )?,
+        last_update_slot: input.current_slot,
+    })
 }
 
 pub fn checked_claimable_base_units(pending_reward_scaled: u128) -> StakingResult<u64> {

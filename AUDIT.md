@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 3 complete  
+Status: Milestone 4 complete  
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -102,3 +102,26 @@ residual risk
 - Residual risk or limitation: These helpers are pure primitives only. Later
   milestones must still wire them into Anchor account handlers and map these
   pure errors to the final on-chain error catalogue.
+
+### Milestone 4 - Global Reward Checkpoint Math
+
+- Scope implemented: Added milestone-marked pure checkpoint input/output
+  structs and `checkpoint_pool_rewards` for elapsed-slot accounting, desired
+  emission, funded-budget caps, partial final emission, accumulator growth,
+  budget reduction, allocated-liability growth, zero-stake checkpoints, paused
+  checkpoints, exhausted-budget checkpoints, and scaled rounding remainders.
+- Security and economic rules touched: Checkpoints emit at most the unallocated
+  funded budget, emit nothing while paused, with zero stake, or after
+  exhaustion, and advance `last_update_slot` to the trusted current slot so
+  skipped gaps cannot accrue retroactively. Rounding leftovers stay in the
+  remaining budget instead of becoming allocated liability.
+- Tests run: `cargo fmt --all -- --check`; `cargo test -p staking_pool --test
+  checkpoint_math`; `cargo clippy --workspace --all-targets -- -D warnings`;
+  `cargo test --workspace`.
+- Result: Passed. Focused tests cover normal accrual, zero stake, pause gaps,
+  exact exhaustion, partial final emission, rounding remainder preservation, and
+  backward-slot underflow.
+- Residual risk or limitation: This remains pure math only. Later Anchor
+  handlers must read `Clock.slot`, persist the returned pool fields atomically,
+  enforce account relationships, and preserve reward solvency against real SPL
+  Token vault balances.

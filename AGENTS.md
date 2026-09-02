@@ -4,7 +4,7 @@
 
 - In your implementation, don't forget to mark (comment) what is milestone this code relate.
 - Update current status section in README.md for progression.
-- Always communicate with the user in English.
+- Always communicate with the user in English don't care what language i use.
 - The user is new to Rust and Solana, but understands basic Solidity/Ethereum ideas.
 - Explain each new core concept from first principles and include a small numeric example when useful.
 - At a core-logic milestone, confirm the user's understanding before implementing it. Supporting work only needs a quick review.
