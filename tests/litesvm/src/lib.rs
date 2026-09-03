@@ -22,6 +22,9 @@ mod milestone15_16_governance;
 mod milestone17_demo_faucet;
 
 #[cfg(test)]
+mod milestone18_invariants;
+
+#[cfg(test)]
 mod tests {
     #[test]
     fn harness_can_link_program_crates() {

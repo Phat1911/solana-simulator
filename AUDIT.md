@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 17 complete
+Status: Milestone 18 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -339,3 +339,29 @@ residual risk
   not Sybil-resistant; one human can still claim from many wallets. Devnet setup
   scripts that create the configured STAKE mint and assign/revoke authorities
   remain Milestone 19.
+
+### Milestone 18 - Cross-Instruction Invariant Suite
+
+- Scope implemented: Added a self-contained LiteSVM state-machine suite that
+  uses only public staking-program instructions to combine reward funding,
+  two-user staking, slot advancement, claims, normal unstaking, admin pause,
+  emergency withdrawal, governance rate changes, and proposal-based unpause.
+  Added adversarial substitutions and three repeatable fixed-seed generated
+  operation sequences.
+- Security and economic rules touched: Every successful transition checks exact
+  principal accounting, aggregate position entitlement against allocated scaled
+  liability, reward reserve-plus-liability against the real reward vault, and
+  complete STAKE and REWARD token conservation. Expected failures snapshot all
+  pool, position, and token balances and require atomic rollback. Malicious
+  reward-vault, position-owner, Token Program, and pause-authority substitutions
+  are rejected without changing protocol state.
+- Tests run: `cargo test -p litesvm_baseline milestone18 -- --nocapture`.
+- Result: Passed. Three focused tests cover the deterministic two-user economic
+  timeline, adversarial account and signer replacement, and 48 generated
+  operations replayed from seeds `0x18`, `0x5eed`, and `0xc0ffee`. The timeline
+  verifies old-rate checkpointing, paused claim rollback, emergency reward
+  recycling, whole-unit payout with fractional carry, and final zero liability.
+- Residual risk or limitation: These tests use deterministic LiteSVM execution,
+  not parallel validator scheduling or unbounded coverage-guided fuzzing. Local
+  validator workflows, browser transactions, Devnet deployment, and external
+  security review remain future work.

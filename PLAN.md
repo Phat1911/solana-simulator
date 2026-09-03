@@ -159,8 +159,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Build multi-user and adversarial state-machine scenarios across funding, staking, slot advancement, claims, pause, emergency withdrawal, and governance.
-- [ ] Assert vault balances and all scaled budget/liability quantities after every successful transition and every expected failure.
+- [x] Build multi-user and adversarial state-machine scenarios across funding, staking, slot advancement, claims, pause, emergency withdrawal, and governance.
+- [x] Assert vault balances and all scaled budget/liability quantities after every successful transition and every expected failure.
 - **Invariant:** Principal and reward solvency, reward conservation, authorization, canonical account binding, and atomic rollback hold across arbitrary valid operation sequences.
 - **Verification:** Deterministic scenario tests plus property/fuzz-style sequences run repeatedly with recorded seeds and no invariant failure.
 

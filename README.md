@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 17 are complete. The repository now has the baseline
+Milestones 1 through 18 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -41,9 +41,13 @@ closure back to the recorded creator.
 The separate demo faucet program now mints exactly `1_000 STAKE` once per
 wallet through a Faucet Authority PDA, creates the user's canonical STAKE ATA
 when needed, and records a permanent claim receipt PDA.
+The cross-instruction LiteSVM suite now drives two users through funding,
+staking, reward claims, governance rate changes, pause/unpause, normal unstake,
+and emergency forfeiture. It also replays fixed-seed operation sequences and
+checks principal solvency, exact scaled reward conservation, canonical account
+binding, token-supply conservation, and atomic rollback after rejected calls.
 
-Cross-instruction invariant scenarios, frontend wallet flows, and Devnet
-deployment remain planned work.
+Frontend wallet flows and Devnet deployment remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
