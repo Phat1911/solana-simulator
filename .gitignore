@@ -1,5 +1,7 @@
 target/
 node_modules/
+app/.next/
+app/tsconfig.tsbuildinfo
 .anchor/
 .private/
 *.log
@@ -10,7 +12,9 @@ LEARNING_NOTES.md
 
 # Local agent skills
 .agents/
-.prompt/
+.note/
+app/AGENTS.md
+app/CLAUDE.md
 
 # Milestone 19: local deployment config may reference wallet/keypair paths.
 scripts/devnet/config.local.json

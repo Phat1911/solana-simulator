@@ -2,11 +2,37 @@
   "name": "slot-staking-app",
   "version": "0.1.0",
   "private": true,
-  "description": "Milestone 1 placeholder for the future wallet-connected Slot Staking frontend.",
+  "type": "module",
+  "description": "Wallet-connected frontend for the Slot Staking Devnet research project.",
   "scripts": {
-    "lint": "node ./scripts/check-placeholder.mjs",
-    "test": "node ./scripts/check-placeholder.mjs",
-    "build": "node ./scripts/check-placeholder.mjs"
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@solana/kit": "8.2.0",
+    "@wallet-standard/app": "1.1.1",
+    "@wallet-standard/core": "1.1.2",
+    "lucide-react": "1.40.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.8",
+    "@types/react-dom": "19.2.3",
+    "jsdom": "27.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "vitest": "5.0.0"
   },
   "engines": {
     "node": "22.18.0",

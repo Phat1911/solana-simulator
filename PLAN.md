@@ -164,9 +164,10 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 - **Invariant:** Principal and reward solvency, reward conservation, authorization, canonical account binding, and atomic rollback hold across arbitrary valid operation sequences.
 - **Verification:** Deterministic scenario tests plus property/fuzz-style sequences run repeatedly with recorded seeds and no invariant failure.
 
+
 ### 19. Devnet Setup And Deployment Scripts
 
-**Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
+**Label:** Supporting/boilerplate
 
 - [x] Add idempotent scripts to create six-decimal mints, mint `1_000_000 REWARD`, revoke reward mint authority, initialize the faucet and pool, fund rewards, and write public addresses to `deployments/devnet.json`.
 - [x] Add secret-safety checks and clear wallet-balance prerequisites; never embed key material.
@@ -174,10 +175,10 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 20. Generated Client And Frontend Foundation
 
-**Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
+**Label:** Supporting/boilerplate
 
-- [ ] Generate the TypeScript client and IDL bindings and create the Next.js 16, React 19, Wallet Standard, `@solana/kit`, Tailwind CSS, Vitest, and Playwright foundation.
-- [ ] Add wallet connection, network display, pool discovery, transaction status, and reusable integer amount formatting.
+- [x] Generate the TypeScript client and IDL bindings and create the Next.js 16, React 19, Wallet Standard, `@solana/kit`, Tailwind CSS, Vitest, and Playwright foundation.
+- [x] Add wallet connection, network display, pool discovery, transaction status, and reusable integer amount formatting.
 - **Verification:** Frontend type-checks, builds, unit tests run, and account reads render against a known local deployment.
 
 ### 21. User Transaction Flows
@@ -191,7 +192,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 22. Admin And Proposal Flows
 
-**Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
+**Label:** Supporting/boilerplate.
 
 - [ ] Add funding, immediate pause, proposal creation, approval, execution, and proposal-status views.
 - [ ] Clearly show exact action parameters, approvals, epoch, expiry, execution state, and wallet eligibility before signing.
@@ -199,7 +200,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 23. Local End-To-End System Test
 
-**Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
+**Label:** Supporting/boilerplate.
 
 - [ ] Automate local validator startup, deployments, fixture wallets, mint setup, pool initialization, and full browser journeys.
 - [ ] Include Alice/Bob reward distribution, pause behavior, emergency forfeiture, multisig rate change, admin replacement, and proposal invalidation.
@@ -207,7 +208,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 24. Devnet Deployment And Smoke Evidence
 
-**Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
+**Label:** Supporting/boilerplate.
 
 - [ ] Deploy both programs to Devnet, run the approved setup, execute a compact real-wallet smoke flow, and verify reward mint authority revocation.
 - [ ] Record program IDs, mint/vault/PDA addresses, transaction signatures, explorer links, slot observations, and upgrade-authority status.
@@ -215,7 +216,7 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 ### 25. Final Self-Audit And Research Package
 
-**Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
+**Label:** Supporting/boilerplate.
 
 - [ ] Consolidate milestone audit entries into the final `AUDIT.md`, including threat model, controls, evidence, known limitations, and explicit non-audit disclaimer.
 - [ ] Complete architecture/flow diagrams, `docs/RESEARCH.md`, and `README.md` with reproducible local and Devnet instructions.

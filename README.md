@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 19 are complete. The repository now has the baseline
+Milestones 1 through 20 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -49,9 +49,13 @@ binding, token-supply conservation, and atomic rollback after rejected calls.
 The repository now also includes Milestone 19 setup automation for localnet and
 Devnet configuration validation, mint creation, REWARD supply minting,
 REWARD mint-authority revocation, pool initialization, reward funding, and
-public deployment metadata generation without storing key material.
+public deployment metadata generation without storing key material. The
+frontend is now a real Next.js 16 and React 19 app with generated Anchor IDL
+artifacts, Wallet Standard discovery, Solana Kit read-only RPC plumbing,
+deployment/account status display, Tailwind CSS styling, and reusable bigint
+formatting helpers for six-decimal token base units.
 
-Frontend wallet flows and real Devnet smoke evidence remain planned work.
+Frontend transaction flows and real Devnet smoke evidence remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -119,7 +123,7 @@ Faucet Claim PDA    one-time Devnet faucet receipt
 
 The Stake and Reward Vaults are canonical ATAs owned by the Pool Authority PDA. User deposits and payouts use the user's canonical token ATAs.
 
-## Planned Stack
+## Stack
 
 ### Programs
 

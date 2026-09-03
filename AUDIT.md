@@ -399,3 +399,31 @@ residual risk
 - Residual risk or limitation: The successful setup was verified against a
   temporary local validator. Real Devnet deployment, Explorer signatures,
   upgrade-authority disclosure, and smoke-test evidence remain Milestone 24.
+
+### Milestone 20 - Generated Client And Frontend Foundation
+
+- Scope implemented: Replaced the placeholder frontend package with a Next.js
+  16, React 19, TypeScript, Tailwind CSS, Wallet Standard, Solana Kit, Vitest,
+  and Playwright foundation. Added generated staking and faucet IDL/type
+  artifacts under `app/src/generated`, a read-only Devnet console, wallet
+  discovery/connect UI, deployment/account status display, Solana RPC account
+  reads, and shared bigint helpers for six-decimal token base units.
+- Security and economic rules touched: Frontend arithmetic helpers parse and
+  format token amounts as integer base units, not JavaScript floating point.
+  The Milestone 20 UI is read-only except wallet connection; no transaction
+  builders, signing, CPI assumptions, or trusted client-side accounting were
+  introduced.
+- Tests run: `npm run typecheck`; `npm test`; `npm run build`; localhost smoke
+  with `NEXT_PUBLIC_POOL=Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ npm run
+  dev -- --hostname 127.0.0.1 --port 3000` and `curl -I
+  http://127.0.0.1:3000`.
+- Result: Passed. TypeScript completed with `tsc --noEmit`; Vitest ran 2 test
+  files and 6 tests; `next build --webpack` compiled and prerendered `/`; the
+  dev server returned HTTP 200 for the dashboard route. The default Turbopack
+  production build path panicked in this WSL/container environment while
+  PostCSS tried to bind an internal port, so the build script uses Next's
+  supported `--webpack` flag.
+- Residual risk or limitation: The app currently renders deployment status and
+  wallet connectivity only. User transaction construction, decoded Pool and
+  Position account data, browser E2E coverage, and real Devnet Explorer smoke
+  evidence remain later milestones.
