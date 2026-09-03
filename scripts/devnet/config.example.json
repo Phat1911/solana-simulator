@@ -1,0 +1,14 @@
+{
+  "cluster": "devnet",
+  "rpc_url": "https://api.devnet.solana.com",
+  "payer_keypair": "/home/YOUR_USER/.config/solana/id.json",
+  "keypair_dir": ".private/deployments/devnet",
+  "pool_id": 0,
+  "admins": [
+    "REPLACE_WITH_ADMIN_1_PUBKEY",
+    "REPLACE_WITH_ADMIN_2_PUBKEY",
+    "REPLACE_WITH_ADMIN_3_PUBKEY"
+  ],
+  "max_reward_rate_per_slot_base_units": 100000000,
+  "initial_reward_funding_base_units": 10000000000
+}

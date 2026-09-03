@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 18 complete
+Status: Milestone 19 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -365,3 +365,37 @@ residual risk
   not parallel validator scheduling or unbounded coverage-guided fuzzing. Local
   validator workflows, browser transactions, Devnet deployment, and external
   security review remain future work.
+
+### Milestone 19 - Devnet Setup And Deployment Scripts
+
+- Scope implemented: Added a milestone-marked Rust deployment helper under
+  `scripts/deployment_tools`, a thin `scripts/devnet/setup.sh` wrapper, Devnet
+  config and deployment metadata examples, and setup documentation. The helper
+  validates config, derives the canonical Pool, Pool Authority, Faucet Authority,
+  vault, and treasury addresses, creates six-decimal STAKE and REWARD mints,
+  mints the fixed `1_000_000 REWARD` supply, revokes REWARD mint authority,
+  initializes the staking pool, funds rewards through `fund_rewards`, and writes
+  public metadata only.
+- Security and economic rules touched: Setup refuses duplicate/default admins,
+  excessive reward-rate caps, zero initial funding, stake/reward mint reuse,
+  private output paths, and config text that looks like embedded key material.
+  Mint keypairs are created or reused from ignored local paths, private RPC URLs
+  are not committed, STAKE mint authority is set to the Faucet Authority PDA,
+  and REWARD mint authority is revoked after the fixed initial supply.
+- Tests run: `cargo test -p deployment_tools`; `cargo run -p deployment_tools
+  -- validate --config /tmp/rust-smc-m19/config.json --output
+  /tmp/rust-smc-m19/localnet.json`; `cargo run -p deployment_tools -- dry-run
+  --config /tmp/rust-smc-m19/config.json --output
+  /tmp/rust-smc-m19/localnet.json`; local validator setup using
+  `cargo run -p deployment_tools -- setup --config
+  /tmp/rust-smc-m19/config.json --output /tmp/rust-smc-m19/localnet.json`;
+  repeated local setup to verify idempotent reuse.
+- Result: Passed. Focused unit tests cover admin uniqueness/default rejection,
+  secret-like config rejection, private output-path rejection, and public RPC
+  labeling. Dry-run produced public deployment metadata without writing secrets.
+  Fresh local setup created the mints/accounts and initialized/funded the pool;
+  a second setup run completed without recreating mints or double-crediting the
+  configured initial reward funding.
+- Residual risk or limitation: The successful setup was verified against a
+  temporary local validator. Real Devnet deployment, Explorer signatures,
+  upgrade-authority disclosure, and smoke-test evidence remain Milestone 24.

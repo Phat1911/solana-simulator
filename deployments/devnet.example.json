@@ -1,0 +1,31 @@
+{
+  "milestone": 19,
+  "cluster": "devnet",
+  "rpc_url_label": "devnet",
+  "staking_program": "REPLACE_AFTER_DEPLOY",
+  "demo_faucet_program": "REPLACE_AFTER_DEPLOY",
+  "payer": "REPLACE_WITH_PUBLIC_KEY",
+  "upgrade_authority": "REPLACE_WITH_PUBLIC_KEY",
+  "pool_id": 0,
+  "stake_mint": "REPLACE_AFTER_SETUP",
+  "reward_mint": "REPLACE_AFTER_SETUP",
+  "reward_treasury_ata": "REPLACE_AFTER_SETUP",
+  "pool": "REPLACE_AFTER_SETUP",
+  "pool_authority": "REPLACE_AFTER_SETUP",
+  "stake_vault": "REPLACE_AFTER_SETUP",
+  "reward_vault": "REPLACE_AFTER_SETUP",
+  "faucet_authority": "REPLACE_AFTER_SETUP",
+  "admins": [
+    "REPLACE_WITH_ADMIN_1_PUBKEY",
+    "REPLACE_WITH_ADMIN_2_PUBKEY",
+    "REPLACE_WITH_ADMIN_3_PUBKEY"
+  ],
+  "max_reward_rate_per_slot_base_units": 100000000,
+  "initial_reward_supply_base_units": 1000000000000,
+  "initial_reward_funding_base_units": 10000000000,
+  "reward_mint_authority_revoked": true,
+  "notes": [
+    "Public metadata only; keypairs and private RPC URLs are intentionally excluded.",
+    "Educational Devnet deployment; not production-ready."
+  ]
+}

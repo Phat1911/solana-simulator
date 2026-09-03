@@ -11,3 +11,6 @@ LEARNING_NOTES.md
 # Local agent skills
 .agents/
 .prompt/
+
+# Milestone 19: local deployment config may reference wallet/keypair paths.
+scripts/devnet/config.local.json

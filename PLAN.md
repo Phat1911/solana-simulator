@@ -168,8 +168,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Supporting/boilerplate — I need a quick review, not a deep checkpoint.
 
-- [ ] Add idempotent scripts to create six-decimal mints, mint `1_000_000 REWARD`, revoke reward mint authority, initialize the faucet and pool, fund rewards, and write public addresses to `deployments/devnet.json`.
-- [ ] Add secret-safety checks and clear wallet-balance prerequisites; never embed key material.
+- [x] Add idempotent scripts to create six-decimal mints, mint `1_000_000 REWARD`, revoke reward mint authority, initialize the faucet and pool, fund rewards, and write public addresses to `deployments/devnet.json`.
+- [x] Add secret-safety checks and clear wallet-balance prerequisites; never embed key material.
 - **Verification:** Scripts support dry-run/config validation and successfully create a fresh local deployment before Devnet use.
 
 ### 20. Generated Client And Frontend Foundation

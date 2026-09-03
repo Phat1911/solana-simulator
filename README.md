@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 18 are complete. The repository now has the baseline
+Milestones 1 through 19 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -46,8 +46,12 @@ staking, reward claims, governance rate changes, pause/unpause, normal unstake,
 and emergency forfeiture. It also replays fixed-seed operation sequences and
 checks principal solvency, exact scaled reward conservation, canonical account
 binding, token-supply conservation, and atomic rollback after rejected calls.
+The repository now also includes Milestone 19 setup automation for localnet and
+Devnet configuration validation, mint creation, REWARD supply minting,
+REWARD mint-authority revocation, pool initialization, reward funding, and
+public deployment metadata generation without storing key material.
 
-Frontend wallet flows and Devnet deployment remain planned work.
+Frontend wallet flows and real Devnet smoke evidence remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -194,6 +198,23 @@ anchor build
 anchor test
 npm run build
 ```
+
+## Local And Devnet Setup
+
+Milestone 19 adds a deployment helper with a safe dry-run path:
+
+```bash
+cp scripts/devnet/config.example.json scripts/devnet/config.local.json
+scripts/devnet/setup.sh validate
+scripts/devnet/setup.sh dry-run
+```
+
+For real setup, keep mint keypairs under `.private/`, keep private RPC URLs out
+of committed config, and write only public addresses to `deployments/devnet.json`.
+The helper creates six-decimal STAKE and REWARD mints, mints the fixed REWARD
+supply, revokes REWARD mint authority, initializes the pool, funds rewards
+through the staking program, and can be rerun without double-funding the
+configured initial amount.
 
 ## Safety Notice
 

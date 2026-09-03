@@ -2,6 +2,7 @@
 members = [
     "programs/staking_pool",
     "programs/demo_faucet",
+    "scripts/deployment_tools",
     "tests/litesvm",
 ]
 resolver = "2"
