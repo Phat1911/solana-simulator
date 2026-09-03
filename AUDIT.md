@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestones 15-16 complete
+Status: Milestone 17 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -314,3 +314,28 @@ residual risk
 - Residual risk or limitation: Governance is now implemented for the staking
   program, but broader adversarial state-machine scenarios across funding,
   staking, pause, emergency withdrawal, and governance remain Milestone 18.
+
+### Milestone 17 - Demo Faucet Program
+
+- Scope implemented: Added the `claim_test_stake` instruction to the separate
+  `demo_faucet` Anchor program, fixed faucet constants, Faucet Authority PDA
+  derivation, permanent Faucet Claim receipt PDA derivation, canonical claimant
+  STAKE ATA creation, SPL Token `mint_to` CPI, `FaucetClaimed` event, and a
+  project-specific demo faucet program ID.
+- Security and economic rules touched: The faucet accepts only six-decimal
+  original SPL Token mints whose mint authority is the Faucet Authority PDA and
+  whose freeze authority is absent. Each wallet can create only one canonical
+  receipt for a given STAKE mint, so replay fails before any second mint. The
+  faucet does not read or mutate staking Pool, Position, Proposal, vault, admin,
+  or reward accounting state.
+- Tests run: `cargo test -p litesvm_baseline milestone17_demo_faucet --
+  --nocapture`.
+- Result: Passed. Focused LiteSVM coverage includes first claim with canonical
+  ATA creation and receipt recording, replay rejection without extra minting,
+  alternate token-account rejection, wrong receipt rejection, wrong faucet
+  authority rejection, wrong mint-decimal rejection, and rollback checks for
+  failed claims.
+- Residual risk or limitation: The faucet is intentionally Devnet-only and is
+  not Sybil-resistant; one human can still claim from many wallets. Devnet setup
+  scripts that create the configured STAKE mint and assign/revoke authorities
+  remain Milestone 19.

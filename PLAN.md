@@ -150,8 +150,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement fixed-config faucet initialization and one `1_000 STAKE` claim per wallet using canonical claim-receipt and faucet-authority PDAs.
-- [ ] Keep the receipt non-closable and separate all faucet authority from staking administration.
+- [x] Implement fixed-config faucet initialization and one `1_000 STAKE` claim per wallet using canonical claim-receipt and faucet-authority PDAs.
+- [x] Keep the receipt non-closable and separate all faucet authority from staking administration.
 - **Invariant:** One wallet can receive at most one faucet allocation, only the configured stake mint can be issued, and the faucet has no authority over staking or reward vaults.
 - **Verification:** LiteSVM tests cover first claim, replay, alternate token accounts, wrong mint/receipt/authority, and atomic rollback.
 

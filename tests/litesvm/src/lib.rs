@@ -19,6 +19,9 @@ mod milestone9_12_token_flows;
 mod milestone15_16_governance;
 
 #[cfg(test)]
+mod milestone17_demo_faucet;
+
+#[cfg(test)]
 mod tests {
     #[test]
     fn harness_can_link_program_crates() {

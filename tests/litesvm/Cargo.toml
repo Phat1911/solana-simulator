@@ -12,10 +12,10 @@ workspace = true
 anchor-litesvm = "0.1.1"
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
-demo_faucet = { path = "../../programs/demo_faucet" }
+demo_faucet = { path = "../../programs/demo_faucet", features = ["no-entrypoint"] }
 solana-program-pack = "2.2.1"
 solana-sdk = "2.2.1"
 solana-system-interface = "1.0.0"
 spl-associated-token-account = "6.0.0"
 spl-token = "7.0.0"
-staking_pool = { path = "../../programs/staking_pool" }
+staking_pool = { path = "../../programs/staking_pool", features = ["no-entrypoint"] }

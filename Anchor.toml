@@ -4,7 +4,7 @@ skip-lint = false
 
 [programs.localnet]
 staking_pool = "Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ"
-demo_faucet = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+demo_faucet = "J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM"
 
 [registry]
 url = "https://api.apr.dev"
