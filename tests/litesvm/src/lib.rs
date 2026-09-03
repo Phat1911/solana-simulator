@@ -16,6 +16,9 @@ mod milestone8_position_lifecycle;
 mod milestone9_12_token_flows;
 
 #[cfg(test)]
+mod milestone15_16_governance;
+
+#[cfg(test)]
 mod tests {
     #[test]
     fn harness_can_link_program_crates() {

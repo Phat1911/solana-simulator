@@ -15,7 +15,10 @@ use anchor_spl::{
 };
 
 use crate::{
-    constants::{ADMIN_COUNT, DEVNET_MAX_REWARD_RATE_PER_SLOT, TOKEN_DECIMALS},
+    constants::{
+        ADMIN_COUNT, ADMIN_THRESHOLD, DEVNET_MAX_REWARD_RATE_PER_SLOT, PROPOSAL_TTL_SLOTS,
+        TOKEN_DECIMALS,
+    },
     error::StakingError,
     math::{
         checked_add_u64, checked_claimable_base_units, checked_paid_scaled,
@@ -24,7 +27,10 @@ use crate::{
         reset_position_reward_debt, settle_position_rewards, ClaimPositionInput,
         ForfeitPositionInput, PoolCheckpointInput, PositionSettlementInput,
     },
-    state::{Pool, Position, POOL_AUTHORITY_SEED, POOL_SEED, POSITION_SEED, STATE_VERSION},
+    state::{
+        Pool, Position, Proposal, ProposalAction, POOL_AUTHORITY_SEED, POOL_SEED, POSITION_SEED,
+        PROPOSAL_SEED, STATE_VERSION,
+    },
 };
 
 declare_id!("Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ");
@@ -444,6 +450,172 @@ pub mod staking_pool {
 
         Ok(())
     }
+
+    /// Milestone 15: create one immutable allowlisted admin proposal.
+    pub fn create_proposal(
+        ctx: Context<CreateProposal>,
+        proposal_id: u64,
+        action: ProposalAction,
+    ) -> Result<()> {
+        let creator_index = require_current_admin(&ctx.accounts.pool, &ctx.accounts.creator.key())?;
+        require!(
+            proposal_id == ctx.accounts.pool.next_proposal_id,
+            StakingError::InvalidProposalId
+        );
+        validate_proposal_action(&ctx.accounts.pool, &action)?;
+
+        let current_slot = Clock::get()?.slot;
+        let mut approvals = [false; ADMIN_COUNT];
+        approvals[creator_index] = true;
+
+        let proposal = &mut ctx.accounts.proposal;
+        proposal.version = STATE_VERSION;
+        proposal.pool = ctx.accounts.pool.key();
+        proposal.proposal_id = proposal_id;
+        proposal.creator = ctx.accounts.creator.key();
+        proposal.admin_epoch = ctx.accounts.pool.admin_epoch;
+        proposal.action = action;
+        proposal.approvals = approvals;
+        proposal.approval_count = 1;
+        proposal.created_slot = current_slot;
+        proposal.expires_at_slot = checked_add_u64(current_slot, PROPOSAL_TTL_SLOTS)?;
+        proposal.executed = false;
+        proposal.bump = ctx.bumps.proposal;
+
+        ctx.accounts.pool.next_proposal_id =
+            checked_add_u64(ctx.accounts.pool.next_proposal_id, 1)?;
+
+        emit!(ProposalCreated {
+            pool: proposal.pool,
+            proposal: proposal.key(),
+            proposal_id,
+            creator: proposal.creator,
+            admin_epoch: proposal.admin_epoch,
+            expires_at_slot: proposal.expires_at_slot,
+            slot: current_slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 15: add one distinct current-admin approval to a proposal.
+    pub fn approve_proposal(ctx: Context<ApproveProposal>) -> Result<()> {
+        let admin_index = require_current_admin(&ctx.accounts.pool, &ctx.accounts.admin.key())?;
+        require_proposal_live(&ctx.accounts.pool, &ctx.accounts.proposal)?;
+        require!(
+            !ctx.accounts.proposal.approvals[admin_index],
+            StakingError::DuplicateApproval
+        );
+
+        ctx.accounts.proposal.approvals[admin_index] = true;
+        ctx.accounts.proposal.approval_count = ctx
+            .accounts
+            .proposal
+            .approval_count
+            .checked_add(1)
+            .ok_or(StakingError::ArithmeticOverflow)?;
+
+        emit!(ProposalApproved {
+            pool: ctx.accounts.pool.key(),
+            proposal: ctx.accounts.proposal.key(),
+            proposal_id: ctx.accounts.proposal.proposal_id,
+            admin: ctx.accounts.admin.key(),
+            approval_count: ctx.accounts.proposal.approval_count,
+            admin_epoch: ctx.accounts.proposal.admin_epoch,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 16: execute exactly one approved proposal action once.
+    pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
+        require_proposal_live(&ctx.accounts.pool, &ctx.accounts.proposal)?;
+        require!(
+            ctx.accounts.proposal.approval_count >= ADMIN_THRESHOLD,
+            StakingError::ProposalNotApproved
+        );
+
+        let action = ctx.accounts.proposal.action.clone();
+        match action {
+            ProposalAction::SetRewardRate { new_rate } => {
+                require!(
+                    new_rate <= ctx.accounts.pool.max_reward_rate_per_slot,
+                    StakingError::RewardRateAboveMaximum
+                );
+                checkpoint_pool(&mut ctx.accounts.pool)?;
+                ctx.accounts.pool.reward_rate_per_slot = new_rate;
+                emit!(RewardRateChanged {
+                    pool: ctx.accounts.pool.key(),
+                    proposal: ctx.accounts.proposal.key(),
+                    proposal_id: ctx.accounts.proposal.proposal_id,
+                    new_rate,
+                    slot: Clock::get()?.slot,
+                });
+            }
+            ProposalAction::UnpausePool => {
+                require!(ctx.accounts.pool.paused, StakingError::PoolNotPaused);
+                ctx.accounts.pool.last_update_slot = Clock::get()?.slot;
+                ctx.accounts.pool.paused = false;
+                emit!(PoolUnpaused {
+                    pool: ctx.accounts.pool.key(),
+                    proposal: ctx.accounts.proposal.key(),
+                    proposal_id: ctx.accounts.proposal.proposal_id,
+                    slot: ctx.accounts.pool.last_update_slot,
+                });
+            }
+            ProposalAction::ReplaceAdmin {
+                old_admin,
+                new_admin,
+            } => {
+                let admin_index =
+                    validate_admin_replacement(&ctx.accounts.pool, &old_admin, &new_admin)?;
+                ctx.accounts.pool.admins[admin_index] = new_admin;
+                ctx.accounts.pool.admin_epoch = checked_add_u64(ctx.accounts.pool.admin_epoch, 1)?;
+                emit!(AdminReplaced {
+                    pool: ctx.accounts.pool.key(),
+                    proposal: ctx.accounts.proposal.key(),
+                    proposal_id: ctx.accounts.proposal.proposal_id,
+                    old_admin,
+                    new_admin,
+                    admin_epoch: ctx.accounts.pool.admin_epoch,
+                    slot: Clock::get()?.slot,
+                });
+            }
+        }
+
+        ctx.accounts.proposal.executed = true;
+        emit!(ProposalExecuted {
+            pool: ctx.accounts.pool.key(),
+            proposal: ctx.accounts.proposal.key(),
+            proposal_id: ctx.accounts.proposal.proposal_id,
+            admin_epoch: ctx.accounts.proposal.admin_epoch,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 16: close only executed, expired, or stale proposals to creator.
+    pub fn close_proposal(ctx: Context<CloseProposal>) -> Result<()> {
+        let current_slot = Clock::get()?.slot;
+        let stale = ctx.accounts.proposal.admin_epoch != ctx.accounts.pool.admin_epoch;
+        let expired = current_slot > ctx.accounts.proposal.expires_at_slot;
+        require!(
+            ctx.accounts.proposal.executed || stale || expired,
+            StakingError::ProposalNotApproved
+        );
+
+        emit!(ProposalClosed {
+            pool: ctx.accounts.pool.key(),
+            proposal: ctx.accounts.proposal.key(),
+            proposal_id: ctx.accounts.proposal.proposal_id,
+            creator: ctx.accounts.proposal.creator,
+            slot: current_slot,
+        });
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -647,6 +819,65 @@ pub struct EmergencyWithdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+#[derive(Accounts)]
+#[instruction(proposal_id: u64)]
+pub struct CreateProposal<'info> {
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    #[account(
+        init,
+        payer = creator,
+        space = Proposal::SPACE,
+        seeds = [PROPOSAL_SEED, pool.key().as_ref(), &proposal_id.to_le_bytes()],
+        bump
+    )]
+    pub proposal: Account<'info, Proposal>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ApproveProposal<'info> {
+    pub admin: Signer<'info>,
+    pub pool: Account<'info, Pool>,
+    #[account(
+        mut,
+        seeds = [PROPOSAL_SEED, pool.key().as_ref(), &proposal.proposal_id.to_le_bytes()],
+        bump = proposal.bump,
+    )]
+    pub proposal: Account<'info, Proposal>,
+}
+
+#[derive(Accounts)]
+pub struct ExecuteProposal<'info> {
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    #[account(
+        mut,
+        seeds = [PROPOSAL_SEED, pool.key().as_ref(), &proposal.proposal_id.to_le_bytes()],
+        bump = proposal.bump,
+    )]
+    pub proposal: Account<'info, Proposal>,
+}
+
+#[derive(Accounts)]
+pub struct CloseProposal<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub pool: Account<'info, Pool>,
+    #[account(
+        mut,
+        close = creator,
+        seeds = [PROPOSAL_SEED, pool.key().as_ref(), &proposal.proposal_id.to_le_bytes()],
+        bump = proposal.bump,
+    )]
+    pub proposal: Account<'info, Proposal>,
+    /// CHECK: Milestone 16: receives rent and must match the proposal creator.
+    #[account(mut, address = proposal.creator)]
+    pub creator: UncheckedAccount<'info>,
+}
+
 #[event]
 pub struct PoolInitialized {
     pub pool: Pubkey,
@@ -737,6 +968,74 @@ pub struct EmergencyWithdrawn {
     pub total_staked: u64,
     pub remaining_reward_budget_scaled: u128,
     pub allocated_liability_scaled: u128,
+    pub slot: u64,
+}
+
+#[event]
+pub struct ProposalCreated {
+    pub pool: Pubkey,
+    pub proposal: Pubkey,
+    pub proposal_id: u64,
+    pub creator: Pubkey,
+    pub admin_epoch: u64,
+    pub expires_at_slot: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct ProposalApproved {
+    pub pool: Pubkey,
+    pub proposal: Pubkey,
+    pub proposal_id: u64,
+    pub admin: Pubkey,
+    pub approval_count: u8,
+    pub admin_epoch: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct ProposalExecuted {
+    pub pool: Pubkey,
+    pub proposal: Pubkey,
+    pub proposal_id: u64,
+    pub admin_epoch: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct ProposalClosed {
+    pub pool: Pubkey,
+    pub proposal: Pubkey,
+    pub proposal_id: u64,
+    pub creator: Pubkey,
+    pub slot: u64,
+}
+
+#[event]
+pub struct RewardRateChanged {
+    pub pool: Pubkey,
+    pub proposal: Pubkey,
+    pub proposal_id: u64,
+    pub new_rate: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct PoolUnpaused {
+    pub pool: Pubkey,
+    pub proposal: Pubkey,
+    pub proposal_id: u64,
+    pub slot: u64,
+}
+
+#[event]
+pub struct AdminReplaced {
+    pub pool: Pubkey,
+    pub proposal: Pubkey,
+    pub proposal_id: u64,
+    pub old_admin: Pubkey,
+    pub new_admin: Pubkey,
+    pub admin_epoch: u64,
     pub slot: u64,
 }
 
@@ -834,10 +1133,65 @@ fn require_original_token_program(token_program: &Program<Token>) -> Result<()> 
     Ok(())
 }
 
-fn require_current_admin(pool: &Account<Pool>, admin: &Pubkey) -> Result<()> {
+fn require_current_admin(pool: &Account<Pool>, admin: &Pubkey) -> Result<usize> {
+    let Some(index) = pool.admins.iter().position(|stored| stored == admin) else {
+        return err!(StakingError::Unauthorized);
+    };
+
+    Ok(index)
+}
+
+fn validate_proposal_action(pool: &Account<Pool>, action: &ProposalAction) -> Result<()> {
+    match action {
+        ProposalAction::SetRewardRate { new_rate } => {
+            require!(
+                *new_rate <= pool.max_reward_rate_per_slot,
+                StakingError::RewardRateAboveMaximum
+            );
+        }
+        ProposalAction::UnpausePool => {}
+        ProposalAction::ReplaceAdmin {
+            old_admin,
+            new_admin,
+        } => {
+            validate_admin_replacement(pool, old_admin, new_admin)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_admin_replacement(
+    pool: &Account<Pool>,
+    old_admin: &Pubkey,
+    new_admin: &Pubkey,
+) -> Result<usize> {
+    require_keys_neq!(
+        *new_admin,
+        Pubkey::default(),
+        StakingError::InvalidAdminReplacement
+    );
+    let Some(old_index) = pool.admins.iter().position(|admin| admin == old_admin) else {
+        return err!(StakingError::InvalidAdminReplacement);
+    };
     require!(
-        pool.admins.iter().any(|stored| stored == admin),
-        StakingError::Unauthorized
+        pool.admins.iter().all(|admin| admin != new_admin),
+        StakingError::InvalidAdminReplacement
+    );
+
+    Ok(old_index)
+}
+
+fn require_proposal_live(pool: &Account<Pool>, proposal: &Account<Proposal>) -> Result<()> {
+    require_keys_eq!(proposal.pool, pool.key(), StakingError::Unauthorized);
+    require!(!proposal.executed, StakingError::ProposalAlreadyExecuted);
+    require!(
+        proposal.admin_epoch == pool.admin_epoch,
+        StakingError::StaleProposal
+    );
+    require!(
+        Clock::get()?.slot <= proposal.expires_at_slot,
+        StakingError::ProposalExpired
     );
     Ok(())
 }

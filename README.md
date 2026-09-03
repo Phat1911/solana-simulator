@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 14 are complete. The repository now has the baseline
+Milestones 1 through 16 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -34,9 +34,13 @@ accounting. Any current admin can now pause a pool after checkpointing, paused
 slots do not generate rewards, and users can emergency-withdraw principal while
 forfeiting their complete scaled reward entitlement back into the unallocated
 reward budget.
+The staking program now also supports the scoped 2-of-3 proposal system for
+reward-rate changes, proposal-based unpause, and one-admin replacement, with
+proposal expiry, stale-epoch invalidation, replay prevention, and safe proposal
+closure back to the recorded creator.
 
-Proposal creation, proposal-based unpause execution, faucet claims, frontend
-wallet flows, and Devnet deployment remain planned work.
+Faucet claims, cross-instruction invariant scenarios, frontend wallet flows,
+and Devnet deployment remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 

@@ -132,8 +132,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement monotonically identified proposal PDAs for one immutable allowlisted action: set rate, unpause, or replace one admin.
-- [ ] Store pool, proposer approval, creation/expiry slots, and the current `admin_epoch`; allow one approval per distinct current admin.
+- [x] Implement monotonically identified proposal PDAs for one immutable allowlisted action: set rate, unpause, or replace one admin.
+- [x] Store pool, proposer approval, creation/expiry slots, and the current `admin_epoch`; allow one approval per distinct current admin.
 - **Invariant:** No proposal can change meaning after an approval, collect duplicate/non-admin approvals, target another pool, exceed the maximum rate, or remain valid past expiry.
 - **Verification:** LiteSVM tests cover all action encodings, immutable data, threshold counting, expiry boundaries, wrong epoch/pool, and invalid replacement keys.
 
@@ -141,8 +141,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Execute threshold-approved proposals exactly once; checkpoint before rate changes; apply unpause timing; rotate one admin and increment `admin_epoch`.
-- [ ] Add safe proposal closure only after execution, expiry, or stale-epoch invalidation, returning rent to the recorded proposer.
+- [x] Execute threshold-approved proposals exactly once; checkpoint before rate changes; apply unpause timing; rotate one admin and increment `admin_epoch`.
+- [x] Add safe proposal closure only after execution, expiry, or stale-epoch invalidation, returning rent to the recorded proposer.
 - **Invariant:** Execution performs exactly the stored action, stale proposals cannot execute after admin rotation, rate changes do not rewrite past rewards, and a proposal can never be replayed.
 - **Verification:** LiteSVM tests cover each action, execution replay, stale epoch, expiry, wrong accounts, old-rate checkpointing, rent destination, and transaction rollback.
 

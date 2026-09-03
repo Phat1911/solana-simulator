@@ -35,4 +35,18 @@ pub enum StakingError {
     InsufficientStake,
     #[msg("Reward vault cannot back the requested payout")]
     InsufficientRewardBacking,
+    #[msg("Proposal has expired")]
+    ProposalExpired,
+    #[msg("Proposal has already executed")]
+    ProposalAlreadyExecuted,
+    #[msg("Proposal does not have enough approvals")]
+    ProposalNotApproved,
+    #[msg("Admin already approved this proposal")]
+    DuplicateApproval,
+    #[msg("Proposal belongs to a stale admin epoch")]
+    StaleProposal,
+    #[msg("Proposal id does not match the pool sequence")]
+    InvalidProposalId,
+    #[msg("Admin replacement is invalid")]
+    InvalidAdminReplacement,
 }

@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestones 13-14 complete
+Status: Milestones 15-16 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -286,3 +286,31 @@ residual risk
   unpause instruction. The new LiteSVM tests share the existing token-flow
   fixture and still use direct pool/position mutation for a few future-state
   simulations until governance and broader state-machine tests exist.
+
+### Milestones 15-16 - Proposal Governance And Execution
+
+- Scope implemented: Added `create_proposal`, `approve_proposal`,
+  `execute_proposal`, and `close_proposal` Anchor instructions for the
+  allowlisted actions `SetRewardRate`, `UnpausePool`, and `ReplaceAdmin`.
+  Added proposal lifecycle events plus reward-rate, unpause, and admin-rotation
+  events.
+- Security and economic rules touched: Proposal PDAs are monotonic per pool and
+  bound to the current `next_proposal_id`; action data is stored immutably in
+  the proposal account. The creator must be a current admin and receives the
+  first approval. A second distinct current admin is required before execution.
+  Execution rejects expired, stale, already-executed, or under-approved
+  proposals. Reward-rate execution checkpoints at the old rate first. Unpause
+  sets `last_update_slot` to the trusted current slot before resuming rewards.
+  Admin replacement validates the old admin and distinct non-default new admin,
+  then increments `admin_epoch` so old proposals become stale.
+- Tests run: `cargo test -p litesvm_baseline milestone15_16_governance --
+  --nocapture`.
+- Result: Passed. Focused LiteSVM coverage includes proposal creation,
+  immutable action storage, proposal ID sequencing, invalid ID/rate/admin
+  replacement rejection, duplicate approval rejection, threshold enforcement,
+  old-rate checkpointing, execution replay rejection, unpause without paused
+  backpay, admin replacement with epoch increment, stale old proposal rejection,
+  and proposal closure after execution or expiry with rent returned to creator.
+- Residual risk or limitation: Governance is now implemented for the staking
+  program, but broader adversarial state-machine scenarios across funding,
+  staking, pause, emergency withdrawal, and governance remain Milestone 18.
