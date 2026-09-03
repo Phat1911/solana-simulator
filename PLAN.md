@@ -114,8 +114,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement immediate pause by any current admin and proposal-only unpause.
-- [ ] Checkpoint at both boundaries so paused slots never generate rewards.
+- [x] Implement immediate pause by any current admin and reserve unpause for the proposal execution path.
+- [x] Checkpoint at pause and enforce paused-slot accounting; proposal execution will set the unpause boundary in Milestone 16.
 - **Invariant:** Pausing freezes generation at the pause slot; paused pools block stake and claim but allow both withdrawal paths; unpause resumes from its current trusted slot without back pay.
 - **Verification:** LiteSVM timeline tests measure rewards immediately before, during, and after pause and exercise unauthorized and redundant transitions.
 
@@ -123,8 +123,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement emergency principal withdrawal with no reward payout in both active and paused states.
-- [ ] Settle first, return all principal, and move the position's complete pending scaled reward from allocated liability to unallocated reserve.
+- [x] Implement emergency principal withdrawal with no reward payout in both active and paused states.
+- [x] Settle first, return all principal, and move the position's complete pending scaled reward from allocated liability to unallocated reserve.
 - **Invariant:** Emergency withdrawal cannot lose principal or create or destroy funded rewards; the user's reward becomes claimable by nobody and is again available for future emissions.
 - **Verification:** LiteSVM tests cover whole and fractional pending rewards, active/paused calls, empty position, substituted accounts, and conservation before/after forfeiture.
 

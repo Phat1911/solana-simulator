@@ -20,8 +20,9 @@ use crate::{
     math::{
         checked_add_u64, checked_claimable_base_units, checked_paid_scaled,
         checked_scale_base_units, checked_sub_scaled, checked_sub_u64, checkpoint_pool_rewards,
-        claim_position_rewards, require_positive_amount, reset_position_reward_debt,
-        settle_position_rewards, ClaimPositionInput, PoolCheckpointInput, PositionSettlementInput,
+        claim_position_rewards, forfeit_position_rewards, require_positive_amount,
+        reset_position_reward_debt, settle_position_rewards, ClaimPositionInput,
+        ForfeitPositionInput, PoolCheckpointInput, PositionSettlementInput,
     },
     state::{Pool, Position, POOL_AUTHORITY_SEED, POOL_SEED, POSITION_SEED, STATE_VERSION},
 };
@@ -355,6 +356,94 @@ pub mod staking_pool {
 
         Ok(())
     }
+
+    /// Milestone 13: any current admin can checkpoint and immediately pause.
+    pub fn pause_pool(ctx: Context<PausePool>) -> Result<()> {
+        require_current_admin(&ctx.accounts.pool, &ctx.accounts.admin.key())?;
+        require!(!ctx.accounts.pool.paused, StakingError::PoolNotPaused);
+
+        checkpoint_pool(&mut ctx.accounts.pool)?;
+        ctx.accounts.pool.paused = true;
+
+        emit!(PoolPaused {
+            pool: ctx.accounts.pool.key(),
+            admin: ctx.accounts.admin.key(),
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
+
+    /// Milestone 14: return all principal and recycle the user's reward entitlement.
+    pub fn emergency_withdraw(ctx: Context<EmergencyWithdraw>) -> Result<()> {
+        require_original_token_program(&ctx.accounts.token_program)?;
+        require_position_owner(
+            &ctx.accounts.position,
+            &ctx.accounts.pool,
+            &ctx.accounts.user,
+        )?;
+        require_pool_vaults(
+            &ctx.accounts.pool,
+            &ctx.accounts.reward_vault,
+            Some(&ctx.accounts.stake_vault),
+        )?;
+
+        checkpoint_pool(&mut ctx.accounts.pool)?;
+        settle_position(&mut ctx.accounts.position, &ctx.accounts.pool)?;
+        require!(
+            ctx.accounts.position.staked_amount > 0
+                || ctx.accounts.position.pending_reward_scaled > 0,
+            StakingError::InvalidAmount
+        );
+
+        let withdrawn_amount = ctx.accounts.position.staked_amount;
+        let forfeited_before = ctx.accounts.position.pending_reward_scaled;
+        let forfeit = forfeit_position_rewards(ForfeitPositionInput {
+            pending_reward_scaled: ctx.accounts.position.pending_reward_scaled,
+            remaining_reward_budget_scaled: ctx.accounts.pool.remaining_reward_budget_scaled,
+            allocated_liability_scaled: ctx.accounts.pool.allocated_liability_scaled,
+        })?;
+
+        ctx.accounts.position.staked_amount = 0;
+        ctx.accounts.position.pending_reward_scaled = forfeit.pending_reward_scaled;
+        ctx.accounts.position.reward_debt_scaled = 0;
+        ctx.accounts.pool.remaining_reward_budget_scaled = forfeit.remaining_reward_budget_scaled;
+        ctx.accounts.pool.allocated_liability_scaled = forfeit.allocated_liability_scaled;
+        ctx.accounts.pool.total_staked =
+            checked_sub_u64(ctx.accounts.pool.total_staked, withdrawn_amount)?;
+
+        if withdrawn_amount > 0 {
+            let pool_key = ctx.accounts.pool.key();
+            let pool_authority_bump = [ctx.accounts.pool.pool_authority_bump];
+            let signer_seeds: &[&[&[u8]]] = &[&[
+                POOL_AUTHORITY_SEED,
+                pool_key.as_ref(),
+                pool_authority_bump.as_ref(),
+            ]];
+
+            token::transfer_checked(
+                ctx.accounts
+                    .emergency_withdraw_transfer_context()
+                    .with_signer(signer_seeds),
+                withdrawn_amount,
+                TOKEN_DECIMALS,
+            )?;
+        }
+
+        emit!(EmergencyWithdrawn {
+            pool: ctx.accounts.pool.key(),
+            position: ctx.accounts.position.key(),
+            owner: ctx.accounts.user.key(),
+            amount: withdrawn_amount,
+            forfeited_scaled: forfeited_before,
+            total_staked: ctx.accounts.pool.total_staked,
+            remaining_reward_budget_scaled: ctx.accounts.pool.remaining_reward_budget_scaled,
+            allocated_liability_scaled: ctx.accounts.pool.allocated_liability_scaled,
+            slot: Clock::get()?.slot,
+        });
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -523,6 +612,41 @@ pub struct ClaimRewards<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+#[derive(Accounts)]
+pub struct PausePool<'info> {
+    pub admin: Signer<'info>,
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+}
+
+#[derive(Accounts)]
+pub struct EmergencyWithdraw<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    /// CHECK: Milestone 14: canonical PDA validated by seeds and used only as token signer.
+    #[account(seeds = [POOL_AUTHORITY_SEED, pool.key().as_ref()], bump = pool.pool_authority_bump)]
+    pub pool_authority: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [POSITION_SEED, pool.key().as_ref(), user.key().as_ref()],
+        bump = position.bump,
+    )]
+    pub position: Account<'info, Position>,
+    #[account(address = pool.stake_mint)]
+    pub stake_mint: Account<'info, Mint>,
+    #[account(address = pool.reward_mint)]
+    pub reward_mint: Account<'info, Mint>,
+    #[account(mut, associated_token::mint = stake_mint, associated_token::authority = user)]
+    pub user_stake_account: Account<'info, TokenAccount>,
+    #[account(mut, address = pool.stake_vault, token::mint = stake_mint, token::authority = pool_authority)]
+    pub stake_vault: Account<'info, TokenAccount>,
+    #[account(mut, address = pool.reward_vault, token::mint = reward_mint)]
+    pub reward_vault: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
 #[event]
 pub struct PoolInitialized {
     pub pool: Pubkey,
@@ -596,6 +720,26 @@ pub struct RewardsClaimed {
     pub slot: u64,
 }
 
+#[event]
+pub struct PoolPaused {
+    pub pool: Pubkey,
+    pub admin: Pubkey,
+    pub slot: u64,
+}
+
+#[event]
+pub struct EmergencyWithdrawn {
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub amount: u64,
+    pub forfeited_scaled: u128,
+    pub total_staked: u64,
+    pub remaining_reward_budget_scaled: u128,
+    pub allocated_liability_scaled: u128,
+    pub slot: u64,
+}
+
 impl<'info> FundRewards<'info> {
     fn fund_rewards_transfer_context(
         &self,
@@ -654,6 +798,22 @@ impl<'info> ClaimRewards<'info> {
     }
 }
 
+impl<'info> EmergencyWithdraw<'info> {
+    fn emergency_withdraw_transfer_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            TransferChecked {
+                from: self.stake_vault.to_account_info(),
+                mint: self.stake_mint.to_account_info(),
+                to: self.user_stake_account.to_account_info(),
+                authority: self.pool_authority.to_account_info(),
+            },
+        )
+    }
+}
+
 fn require_distinct_admins(admins: &[Pubkey; ADMIN_COUNT]) -> Result<()> {
     for (index, admin) in admins.iter().enumerate() {
         require_keys_neq!(*admin, Pubkey::default(), StakingError::InvalidAdminSet);
@@ -670,6 +830,14 @@ fn require_original_token_program(token_program: &Program<Token>) -> Result<()> 
         token_program.key(),
         anchor_spl::token::ID,
         StakingError::InvalidTokenProgram
+    );
+    Ok(())
+}
+
+fn require_current_admin(pool: &Account<Pool>, admin: &Pubkey) -> Result<()> {
+    require!(
+        pool.admins.iter().any(|stored| stored == admin),
+        StakingError::Unauthorized
     );
     Ok(())
 }

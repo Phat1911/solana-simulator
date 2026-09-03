@@ -29,6 +29,8 @@ pub enum StakingError {
     PositionNotEmpty,
     #[msg("Pool is paused")]
     PoolPaused,
+    #[msg("Pool is not paused")]
+    PoolNotPaused,
     #[msg("Position does not have enough staked principal")]
     InsufficientStake,
     #[msg("Reward vault cannot back the requested payout")]

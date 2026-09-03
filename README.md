@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 12 are complete. The repository now has the baseline
+Milestones 1 through 14 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -30,10 +30,13 @@ emission set to zero. Users can now open their canonical Position PDA for a
 pool, fund rewards through validated SPL Token transfers, stake from canonical
 STAKE ATAs, unstake principal through the Pool Authority PDA, claim whole REWARD
 base units, and close a position only when it contains no stake or reward
-accounting.
+accounting. Any current admin can now pause a pool after checkpointing, paused
+slots do not generate rewards, and users can emergency-withdraw principal while
+forfeiting their complete scaled reward entitlement back into the unallocated
+reward budget.
 
-Pause governance, emergency withdrawal, proposal execution, faucet claims,
-frontend wallet flows, and Devnet deployment remain planned work.
+Proposal creation, proposal-based unpause execution, faucet claims, frontend
+wallet flows, and Devnet deployment remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 

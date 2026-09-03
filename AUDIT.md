@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestones 9-12 complete
+Status: Milestones 13-14 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -259,3 +259,30 @@ residual risk
   account mutation to simulate future governance states or corrupted backing;
   later milestones should add end-to-end paths that create those states only
   through public instructions.
+
+### Milestones 13-14 - Pause Semantics And Emergency Withdrawal
+
+- Scope implemented: Added `pause_pool` and `emergency_withdraw` Anchor
+  instructions, `PoolPaused` and `EmergencyWithdrawn` events, admin membership
+  validation, and Pool Authority PDA-signed principal return for emergency
+  withdrawal.
+- Security and economic rules touched: Any current admin can pause only an
+  active pool, and pause checkpoints before flipping `paused = true` so rewards
+  stop exactly at the trusted pause slot. While paused, existing stake and claim
+  guards still block stake and claim while normal unstake and emergency
+  withdrawal remain available. Emergency withdrawal checkpoints, settles the
+  position, returns all principal to the canonical STAKE ATA, zeroes stake,
+  reward debt, and pending reward, subtracts the forfeited scaled reward from
+  allocated liability, and adds it back to remaining reward budget.
+- Tests run: `cargo test -p litesvm_baseline milestone9_12_token_flows --
+  --nocapture`; `cargo test -p staking_pool --test position_math`.
+- Result: Passed. Focused LiteSVM coverage now includes admin pause
+  checkpointing, paused-slot non-accrual, unauthorized pause rejection,
+  redundant pause rejection, active emergency withdrawal with full principal
+  return and reward recycling, and paused fraction-only forfeiture for position
+  cleanup. Pure forfeiture math tests continue to pass.
+- Residual risk or limitation: Proposal-based unpause is intentionally completed
+  with proposal execution in Milestone 16; there is still no public direct
+  unpause instruction. The new LiteSVM tests share the existing token-flow
+  fixture and still use direct pool/position mutation for a few future-state
+  simulations until governance and broader state-machine tests exist.

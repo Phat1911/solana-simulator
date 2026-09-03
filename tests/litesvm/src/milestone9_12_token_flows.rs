@@ -1,4 +1,4 @@
-//! Milestones 9-12: LiteSVM coverage for reward funding, stake, unstake, and claim.
+//! Milestones 9-14: LiteSVM coverage for token flows, pause, and emergency withdrawal.
 
 #![allow(clippy::unwrap_used)]
 
@@ -25,14 +25,6 @@ fn program_bytes() -> &'static [u8] {
 
 fn new_context() -> AnchorContext {
     AnchorLiteSVM::build_with_program(staking_pool::ID, program_bytes())
-}
-
-fn default_admins() -> [Pubkey; ADMIN_COUNT] {
-    [
-        Pubkey::new_unique(),
-        Pubkey::new_unique(),
-        Pubkey::new_unique(),
-    ]
 }
 
 fn create_mint(ctx: &mut AnchorContext) -> Keypair {
@@ -211,6 +203,24 @@ fn read_position(ctx: &AnchorContext, position: Pubkey) -> Position {
     Position::try_deserialize(&mut account.data.as_slice()).unwrap()
 }
 
+fn write_position(ctx: &mut AnchorContext, position_pubkey: Pubkey, position: &Position) {
+    let mut account = ctx.svm.get_account(&position_pubkey).unwrap();
+    account.data.clear();
+    position.try_serialize(&mut account.data).unwrap();
+    ctx.svm
+        .set_account(
+            position_pubkey,
+            Account {
+                lamports: account.lamports,
+                data: account.data,
+                owner: account.owner,
+                executable: account.executable,
+                rent_epoch: account.rent_epoch,
+            },
+        )
+        .unwrap();
+}
+
 fn read_token(ctx: &AnchorContext, token_account: Pubkey) -> spl_token::state::Account {
     let account = ctx.svm.get_account(&token_account).unwrap();
     spl_token::state::Account::unpack(&account.data).unwrap()
@@ -245,6 +255,7 @@ struct Fixture {
     reward_vault: Pubkey,
     user: Keypair,
     funder: Keypair,
+    admins: [Keypair; ADMIN_COUNT],
     user_stake_ata: Pubkey,
     user_reward_ata: Pubkey,
     funder_reward_account: Pubkey,
@@ -260,6 +271,11 @@ fn setup() -> Fixture {
     let stake_vault = ata(&pool_authority, &stake_mint);
     let reward_vault = ata(&pool_authority, &reward_mint);
 
+    let admins = [Keypair::new(), Keypair::new(), Keypair::new()];
+    for admin in &admins {
+        fund_sol(&mut ctx, admin);
+    }
+    let admin_pubkeys = admins.each_ref().map(Keypair::pubkey);
     let initialize = anchor_litesvm::Instruction {
         program_id: staking_pool::ID,
         accounts: staking_pool::accounts::InitializePool {
@@ -278,7 +294,7 @@ fn setup() -> Fixture {
         .to_account_metas(None),
         data: staking_pool::instruction::InitializePool {
             pool_id: POOL_ID,
-            admins: default_admins(),
+            admins: admin_pubkeys,
             max_reward_rate_per_slot: MAX_REWARD_RATE_PER_SLOT,
         }
         .data(),
@@ -330,6 +346,7 @@ fn setup() -> Fixture {
         reward_vault,
         user,
         funder,
+        admins,
         user_stake_ata,
         user_reward_ata,
         funder_reward_account,
@@ -424,6 +441,39 @@ fn claim_ix(fixture: &Fixture) -> anchor_litesvm::Instruction {
     }
 }
 
+fn pause_ix(fixture: &Fixture, admin: Pubkey) -> anchor_litesvm::Instruction {
+    anchor_litesvm::Instruction {
+        program_id: staking_pool::ID,
+        accounts: staking_pool::accounts::PausePool {
+            admin,
+            pool: fixture.pool,
+        }
+        .to_account_metas(None),
+        data: staking_pool::instruction::PausePool {}.data(),
+    }
+}
+
+fn emergency_withdraw_ix(fixture: &Fixture) -> anchor_litesvm::Instruction {
+    let position = derive_position_pda(&staking_pool::ID, &fixture.pool, &fixture.user.pubkey()).0;
+    anchor_litesvm::Instruction {
+        program_id: staking_pool::ID,
+        accounts: staking_pool::accounts::EmergencyWithdraw {
+            user: fixture.user.pubkey(),
+            pool: fixture.pool,
+            pool_authority: fixture.pool_authority,
+            position,
+            stake_mint: fixture.stake_mint,
+            reward_mint: fixture.reward_mint,
+            user_stake_account: fixture.user_stake_ata,
+            stake_vault: fixture.stake_vault,
+            reward_vault: fixture.reward_vault,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: staking_pool::instruction::EmergencyWithdraw {}.data(),
+    }
+}
+
 fn execute_user(
     fixture: &mut Fixture,
     ix: anchor_litesvm::Instruction,
@@ -441,6 +491,17 @@ fn execute_funder(
     fixture
         .ctx
         .execute_instruction(ix, &[&fixture.funder])
+        .unwrap()
+}
+
+fn execute_admin(
+    fixture: &mut Fixture,
+    ix: anchor_litesvm::Instruction,
+    admin_index: usize,
+) -> anchor_litesvm::TransactionResult {
+    fixture
+        .ctx
+        .execute_instruction(ix, &[&fixture.admins[admin_index]])
         .unwrap()
 }
 
@@ -807,4 +868,149 @@ fn claim_rejects_while_paused_wrong_ata_and_insufficient_backing() {
     };
     assert!(!insufficient_backing_result.is_success());
     assert_eq!(read_token(&fixture.ctx, fixture.user_reward_ata).amount, 0);
+}
+
+#[test]
+fn pause_by_admin_checkpoints_and_blocks_reward_generation() {
+    let mut fixture = setup();
+    {
+        let ix = fund_rewards_ix(&fixture, REWARD_FUNDING);
+        execute_funder(&mut fixture, ix)
+    }
+    .assert_success();
+    set_pool_active(&mut fixture, 10);
+    {
+        let ix = stake_ix(&fixture, STAKE_AMOUNT);
+        execute_user(&mut fixture, ix)
+    }
+    .assert_success();
+
+    let start_slot = read_pool(&fixture.ctx, fixture.pool).last_update_slot;
+    fixture.ctx.svm.warp_to_slot(start_slot + 5);
+    {
+        let ix = pause_ix(&fixture, fixture.admins[0].pubkey());
+        execute_admin(&mut fixture, ix, 0)
+    }
+    .assert_success();
+
+    let paused_pool = read_pool(&fixture.ctx, fixture.pool);
+    let paused_budget = paused_pool.remaining_reward_budget_scaled;
+    let paused_liability = paused_pool.allocated_liability_scaled;
+    assert!(paused_pool.paused);
+    assert_eq!(paused_liability, 50 * REWARD_PRECISION);
+
+    fixture
+        .ctx
+        .svm
+        .warp_to_slot(paused_pool.last_update_slot + 20);
+    {
+        let ix = unstake_ix(&fixture, STAKE_AMOUNT / 2);
+        execute_user(&mut fixture, ix)
+    }
+    .assert_success();
+
+    let after_unstake = read_pool(&fixture.ctx, fixture.pool);
+    assert!(after_unstake.paused);
+    assert_eq!(after_unstake.remaining_reward_budget_scaled, paused_budget);
+    assert_eq!(after_unstake.allocated_liability_scaled, paused_liability);
+}
+
+#[test]
+fn pause_rejects_non_admin_and_redundant_pause_without_state_change() {
+    let mut fixture = setup();
+    set_pool_active(&mut fixture, 1);
+    let before = read_pool(&fixture.ctx, fixture.pool);
+    let attacker = Keypair::new();
+    fund_sol(&mut fixture.ctx, &attacker);
+    let unauthorized_ix = pause_ix(&fixture, attacker.pubkey());
+    let unauthorized = fixture
+        .ctx
+        .execute_instruction(unauthorized_ix, &[&attacker])
+        .unwrap();
+    assert!(!unauthorized.is_success());
+    assert_eq!(read_pool(&fixture.ctx, fixture.pool), before);
+
+    {
+        let ix = pause_ix(&fixture, fixture.admins[0].pubkey());
+        execute_admin(&mut fixture, ix, 0)
+    }
+    .assert_success();
+    let redundant = {
+        let ix = pause_ix(&fixture, fixture.admins[1].pubkey());
+        execute_admin(&mut fixture, ix, 1)
+    };
+    assert!(!redundant.is_success());
+    assert!(read_pool(&fixture.ctx, fixture.pool).paused);
+}
+
+#[test]
+fn emergency_withdraw_returns_principal_and_recycles_pending_rewards() {
+    let mut fixture = setup();
+    {
+        let ix = fund_rewards_ix(&fixture, REWARD_FUNDING);
+        execute_funder(&mut fixture, ix)
+    }
+    .assert_success();
+    set_pool_active(&mut fixture, 10);
+    {
+        let ix = stake_ix(&fixture, STAKE_AMOUNT);
+        execute_user(&mut fixture, ix)
+    }
+    .assert_success();
+    let start_slot = read_pool(&fixture.ctx, fixture.pool).last_update_slot;
+    fixture.ctx.svm.warp_to_slot(start_slot + 5);
+
+    {
+        let ix = emergency_withdraw_ix(&fixture);
+        execute_user(&mut fixture, ix)
+    }
+    .assert_success();
+
+    let position = read_position(
+        &fixture.ctx,
+        derive_position_pda(&staking_pool::ID, &fixture.pool, &fixture.user.pubkey()).0,
+    );
+    let pool = read_pool(&fixture.ctx, fixture.pool);
+    assert_eq!(position.staked_amount, 0);
+    assert_eq!(position.reward_debt_scaled, 0);
+    assert_eq!(position.pending_reward_scaled, 0);
+    assert_eq!(pool.total_staked, 0);
+    assert_eq!(pool.allocated_liability_scaled, 0);
+    assert_eq!(
+        pool.remaining_reward_budget_scaled,
+        u128::from(REWARD_FUNDING) * REWARD_PRECISION
+    );
+    assert_eq!(
+        read_token(&fixture.ctx, fixture.user_stake_ata).amount,
+        STAKE_AMOUNT * 10
+    );
+    assert_eq!(read_token(&fixture.ctx, fixture.stake_vault).amount, 0);
+    assert!(reward_solvency_holds(&fixture));
+}
+
+#[test]
+fn emergency_withdraw_allows_fraction_only_forfeiture_while_paused() {
+    let mut fixture = setup();
+    let position_pubkey =
+        derive_position_pda(&staking_pool::ID, &fixture.pool, &fixture.user.pubkey()).0;
+    let mut pool = read_pool(&fixture.ctx, fixture.pool);
+    pool.paused = true;
+    pool.remaining_reward_budget_scaled = 1_000;
+    pool.allocated_liability_scaled = 7;
+    write_pool(&mut fixture.ctx, fixture.pool, &pool);
+    let mut position = read_position(&fixture.ctx, position_pubkey);
+    position.pending_reward_scaled = 7;
+    write_position(&mut fixture.ctx, position_pubkey, &position);
+
+    {
+        let ix = emergency_withdraw_ix(&fixture);
+        execute_user(&mut fixture, ix)
+    }
+    .assert_success();
+
+    let position = read_position(&fixture.ctx, position_pubkey);
+    let pool = read_pool(&fixture.ctx, fixture.pool);
+    assert_eq!(position.pending_reward_scaled, 0);
+    assert_eq!(pool.allocated_liability_scaled, 0);
+    assert_eq!(pool.remaining_reward_budget_scaled, 1_007);
 }
