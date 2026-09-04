@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatBaseUnits, parseBaseUnits, shortAddress, TOKEN_BASE_UNITS } from "@/lib/amounts";
+import { formatBaseUnits, parseBaseUnits, shortAddress, toU64Amount, TOKEN_BASE_UNITS } from "@/lib/amounts";
 
 describe("amount formatting", () => {
   it("formats six-decimal token base units without floating point", () => {
@@ -19,6 +19,13 @@ describe("amount formatting", () => {
   it("rejects precision that cannot exist on chain", () => {
     expect(() => parseBaseUnits("0.0000001")).toThrow("decimal places");
     expect(() => parseBaseUnits("-1")).toThrow("positive decimal");
+    expect(() => parseBaseUnits("1e6")).toThrow("positive decimal");
+    expect(() => parseBaseUnits("")).toThrow("positive decimal");
+  });
+
+  it("rejects non-positive and oversized transaction amounts", () => {
+    expect(() => toU64Amount(0n)).toThrow("greater than zero");
+    expect(() => toU64Amount(18_446_744_073_709_551_616n)).toThrow("u64");
   });
 });
 

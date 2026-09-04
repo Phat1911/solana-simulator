@@ -185,8 +185,8 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Core logic
 
-- [ ] Implement faucet claim, position opening, stake, unstake, emergency withdrawal, and claim transaction builders using derived PDAs and canonical ATAs.
-- [ ] Display principal, pending rewards, paused state, available balances, and explorer links without floating-point transaction math.
+- [x] Implement faucet claim, position opening, stake, unstake, emergency withdrawal, and claim transaction builders using derived PDAs and canonical ATAs.
+- [x] Display principal, pending rewards, paused state, available balances, and explorer links without floating-point transaction math.
 - **Invariant:** The UI derives and submits the same canonical accounts and integer base-unit amounts enforced by the programs; displayed estimates never become trusted on-chain inputs.
 - **Verification:** Vitest covers amount parsing and derivation; Playwright covers successful and rejected user workflows against the local validator.
 

@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 20 are complete. The repository now has the baseline
+Milestones 1 through 21 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -53,9 +53,14 @@ public deployment metadata generation without storing key material. The
 frontend is now a real Next.js 16 and React 19 app with generated Anchor IDL
 artifacts, Wallet Standard discovery, Solana Kit read-only RPC plumbing,
 deployment/account status display, Tailwind CSS styling, and reusable bigint
-formatting helpers for six-decimal token base units.
+formatting helpers for six-decimal token base units. The frontend also prepares
+canonical user transactions for faucet claims, position opening, first-stake
+bundling, stake, unstake, claim, emergency withdraw, and position close; it
+decodes Pool and Position account data, displays user balances and estimated
+pending rewards, and keeps transaction amounts as integer base units.
 
-Frontend transaction flows and real Devnet smoke evidence remain planned work.
+Signed browser submission, admin flows, local-validator journeys, and real
+Devnet smoke evidence remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 

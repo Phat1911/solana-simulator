@@ -41,6 +41,24 @@ export function parseBaseUnits(value: string, decimals = TOKEN_DECIMALS): bigint
   return BigInt(whole) * scale + BigInt(paddedFraction || "0");
 }
 
+export function requirePositiveBaseUnits(amount: bigint): bigint {
+  if (amount <= 0n) {
+    throw new Error("amount must be greater than zero");
+  }
+
+  return amount;
+}
+
+export function toU64Amount(amount: bigint): bigint {
+  requirePositiveBaseUnits(amount);
+
+  if (amount > 18_446_744_073_709_551_615n) {
+    throw new Error("amount exceeds u64 maximum");
+  }
+
+  return amount;
+}
+
 export function shortAddress(value: string, visible = 4): string {
   if (value.length <= visible * 2 + 3) {
     return value;

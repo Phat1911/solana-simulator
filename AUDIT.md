@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 19 complete
+Status: Milestone 21 complete
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -427,3 +427,37 @@ residual risk
   wallet connectivity only. User transaction construction, decoded Pool and
   Position account data, browser E2E coverage, and real Devnet Explorer smoke
   evidence remain later milestones.
+
+### Milestone 21 - User Transaction Flows
+
+- Scope implemented: Added milestone-marked frontend PDA/ATA derivation helpers,
+  Anchor instruction encoders, prepared user transaction builders for faucet
+  claim, open position, stake, open-plus-stake bundling, unstake, claim rewards,
+  emergency withdraw, and close position, plus a Solana Kit transaction-message
+  assembly helper. The dashboard now lifts wallet connection state, derives
+  user token accounts, decodes Pool and Position account data, reads token
+  balances, displays principal, paused state, and estimated pending rewards,
+  and shows a transaction preparation status panel. Emergency withdrawal
+  requires an explicit forfeiture checkbox.
+- Security and economic rules touched: Frontend derivations mirror the
+  canonical on-chain seed recipes for Position, Pool Authority, Faucet
+  Authority, Faucet Claim, and user ATAs. Amount parsing rejects malformed,
+  negative, zero, over-precision, scientific-notation, and oversized `u64`
+  values before instruction data is encoded. Pending rewards are displayed as
+  an estimate only; on-chain settlement and claim execution remain
+  authoritative.
+- Tests run: `npm run typecheck`; `npm test`; `npm run e2e`; `npm run build`;
+  `cargo fmt --all -- --check`; `git diff --check`.
+- Result: Passed. TypeScript completed with `tsc --noEmit`; Vitest ran 6 test
+  files and 17 tests covering amount parsing, PDA/ATA derivation, account
+  decoding, user instruction account lists, Anchor discriminators, u64 amount
+  encoding, Pool Authority PDA use, and transaction-message assembly.
+  Playwright ran 2 Chromium tests covering the disconnected action surface and
+  connected fake-wallet first-stake preparation. `next build --webpack`
+  compiled and prerendered `/`.
+- Residual risk or limitation: The milestone now prepares canonical user
+  transactions but does not yet submit signed wallet transactions to a live
+  local validator. Playwright uses a fake Wallet Standard wallet and configured
+  account addresses for browser coverage. Full local-validator transaction
+  journeys, real wallet differences, RPC staleness handling, and Devnet
+  Explorer evidence remain future milestones.

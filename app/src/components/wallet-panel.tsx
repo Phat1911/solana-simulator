@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { connectWallet, getDetectedWallets, subscribeToWalletChanges, type WalletLike } from "@/lib/wallets";
 import { shortAddress } from "@/lib/amounts";
 
-export function WalletPanel() {
+export function WalletPanel({ onAccountChange }: { onAccountChange?: (account: string | undefined) => void }) {
   const [wallets, setWallets] = useState<readonly WalletLike[]>([]);
   const [selected, setSelected] = useState<string>();
   const [account, setAccount] = useState<string>();
@@ -28,6 +28,7 @@ export function WalletPanel() {
     try {
       const accounts = await connectWallet(wallet);
       setAccount(accounts[0]?.address);
+      onAccountChange?.(accounts[0]?.address);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Wallet connection failed");
     }

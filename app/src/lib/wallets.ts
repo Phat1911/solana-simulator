@@ -13,6 +13,11 @@ export type WalletLike = {
   readonly features?: Record<string, unknown>;
 };
 
+export type ConnectedWalletState = {
+  walletName: string;
+  account: string;
+};
+
 type ConnectFeature = {
   connect(input?: { silent?: boolean }): Promise<{ accounts?: readonly WalletAccountLike[] }>;
 };

@@ -285,6 +285,99 @@ h2 {
   font-size: 14px;
 }
 
+.action-balances {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.amount-field,
+.confirm-row {
+  display: flex;
+  align-items: center;
+}
+
+.amount-field {
+  gap: 10px;
+  margin: 16px 0 12px;
+}
+
+.amount-field span,
+.confirm-row span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.amount-field input {
+  width: min(260px, 100%);
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--text);
+  font: inherit;
+}
+
+.amount-field input:focus {
+  border-color: var(--accent);
+  outline: 2px solid #b9ded4;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.action-grid button,
+.danger-button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.action-grid button:hover,
+.danger-button:hover {
+  border-color: var(--accent);
+  background: var(--surface-muted);
+}
+
+.action-grid button:disabled,
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.confirm-row {
+  gap: 8px;
+  margin: 14px 0 8px;
+}
+
+.confirm-row input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--danger);
+}
+
+.danger-button {
+  color: var(--danger);
+}
+
+.transaction-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     width: min(100% - 24px, 1180px);
@@ -294,7 +387,9 @@ h2 {
   .topbar,
   .content-grid,
   .status-strip,
-  .detail-list.horizontal {
+  .detail-list.horizontal,
+  .action-balances,
+  .action-grid {
     grid-template-columns: 1fr;
   }
 
