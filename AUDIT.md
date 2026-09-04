@@ -503,11 +503,13 @@ residual risk
   invariant suite for Alice/Bob reward distribution, pause behavior, emergency
   forfeiture, governance rate change, admin replacement, proposal invalidation,
   solvency, conservation, and rollback checks.
-- Tests run: `bash -n tests/local-e2e/run.sh`.
-- Result: Passed syntax validation. The full harness is intentionally handed
-  off because it can take a while: `tests/local-e2e/run.sh`.
-- Residual risk or limitation: Full local-validator execution evidence is
-  pending the handoff command. The browser segment currently validates rendered
+- Tests run: `bash -n tests/local-e2e/run.sh`; user-handoff execution of
+  `tests/local-e2e/run.sh`.
+- Result: Passed. The local harness built the programs, started the local
+  validator, initialized and funded the local pool, ran the focused Milestone
+  18 LiteSVM invariant tests with 3 passing tests, ran 8 frontend unit-test
+  files with 26 passing tests, and ran 3 Playwright Chromium tests.
+- Residual risk or limitation: The browser segment currently validates rendered
   action surfaces and prepared transaction plans; live wallet-signed browser
   transaction submission remains future work.
 
@@ -535,8 +537,12 @@ residual risk
   RPC label resolution and Devnet Explorer link generation in addition to the
   existing Milestone 19 secret-safety tests.
 - Residual risk or limitation: Actual Devnet deployment, setup signatures,
-  smoke output, and Explorer evidence require the user's funded Devnet wallet
-  and have not been recorded yet. Program deployment signatures are produced by
+  smoke output, and Explorer evidence require the user's funded Devnet wallet.
+  A partial Devnet attempt deployed `demo_faucet` at
+  `J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM` with signature
+  `5L6W2Kun5Xy4hVmrY9usaHdt2a9t8BD2BtsCcXtsXbGqNJV13sxhPt8nWCr8FQbTnxkc7T2spDDmSkYcJNnaSMiM`.
+  The corrected `staking_pool` redeploy is pending additional Devnet SOL after
+  an insufficient-funds error. Program deployment signatures are produced by
   `anchor deploy` and must be copied into public evidence manually.
 
 ### Milestone 25 - Final Self-Audit And Research Package

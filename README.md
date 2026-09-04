@@ -240,6 +240,13 @@ verification is:
 scripts/devnet/smoke.sh
 ```
 
+If Devnet SOL runs out after one program deploys, top up the same wallet and
+deploy only the missing program, for example:
+
+```bash
+anchor deploy -p staking_pool --provider.cluster devnet
+```
+
 Record public addresses, transaction signatures, smoke output, and Explorer
 links using [DEVNET_EVIDENCE_TEMPLATE.md](./deployments/DEVNET_EVIDENCE_TEMPLATE.md).
 

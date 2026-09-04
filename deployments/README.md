@@ -24,6 +24,20 @@ scripts/devnet/smoke.sh
    links into a final evidence note using
    `deployments/DEVNET_EVIDENCE_TEMPLATE.md`.
 
+If one program deploys successfully but the second fails because the wallet ran
+out of Devnet SOL, top up the same wallet and deploy only the missing program.
+For example:
+
+```bash
+anchor deploy -p staking_pool --provider.cluster devnet
+```
+
+After any program ID change, rebuild before redeploying:
+
+```bash
+anchor build
+```
+
 The committed `deployments/devnet.json` may contain public addresses and public
 RPC labels only. It must never contain keypair arrays, private RPC URLs, seed
 phrases, or local wallet paths.
