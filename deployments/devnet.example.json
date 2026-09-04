@@ -26,6 +26,7 @@
   "reward_mint_authority_revoked": true,
   "notes": [
     "Public metadata only; keypairs and private RPC URLs are intentionally excluded.",
+    "Direct vault transfers are surplus and are not accounting credit.",
     "Educational Devnet deployment; not production-ready."
   ]
 }

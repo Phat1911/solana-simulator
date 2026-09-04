@@ -25,7 +25,7 @@ use spl_associated_token_account::{
 };
 use spl_token::{
     instruction::{initialize_mint, mint_to, set_authority},
-    state::Mint,
+    state::{Account as TokenAccount, Mint},
 };
 
 const TOKEN_DECIMALS: u8 = 6;
@@ -47,7 +47,7 @@ struct SetupConfig {
     initial_reward_funding_base_units: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct DeploymentMetadata {
     milestone: u8,
     cluster: String,
@@ -75,12 +75,24 @@ struct DeploymentMetadata {
 
 fn main() -> Result<()> {
     let args = Args::parse()?;
-    let config = SetupConfig::read(&args.config)?;
-    let plan = SetupPlan::new(config, args.output, args.mode)?;
-
-    plan.validate(args.mode)?;
-
     match args.mode {
+        Mode::Smoke => {
+            let metadata = DeploymentMetadata::read(&args.output)?;
+            smoke(&metadata)?;
+        }
+        Mode::Validate | Mode::DryRun | Mode::Setup => {
+            let config = SetupConfig::read(&args.config)?;
+            let plan = SetupPlan::new(config, args.output, args.mode)?;
+            plan.validate(args.mode)?;
+            run_setup_mode(&plan, args.mode)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn run_setup_mode(plan: &SetupPlan, mode: Mode) -> Result<()> {
+    match mode {
         Mode::Validate => {
             println!("Milestone 19 config validation passed.");
             println!("cluster: {}", plan.config.cluster);
@@ -95,8 +107,8 @@ fn main() -> Result<()> {
         Mode::Setup => {
             plan.setup()?;
         }
+        Mode::Smoke => unreachable!("smoke mode is handled before setup planning"),
     }
-
     Ok(())
 }
 
@@ -105,6 +117,7 @@ enum Mode {
     Validate,
     DryRun,
     Setup,
+    Smoke,
 }
 
 #[derive(Debug)]
@@ -126,6 +139,7 @@ impl Args {
                 "validate" => mode = Some(Mode::Validate),
                 "dry-run" => mode = Some(Mode::DryRun),
                 "setup" => mode = Some(Mode::Setup),
+                "smoke" => mode = Some(Mode::Smoke),
                 "--config" => {
                     config = PathBuf::from(
                         args.next()
@@ -160,7 +174,8 @@ fn print_help() {
          Usage:\n\
            cargo run -p deployment_tools -- validate --config <path>\n\
            cargo run -p deployment_tools -- dry-run --config <path>\n\
-           cargo run -p deployment_tools -- setup --config <path> --output deployments/devnet.json\n"
+           cargo run -p deployment_tools -- setup --config <path> --output deployments/devnet.json\n\
+           cargo run -p deployment_tools -- smoke --output deployments/devnet.json\n"
     );
 }
 
@@ -171,6 +186,16 @@ impl SetupConfig {
         reject_secret_like_config(&raw)?;
         serde_json::from_str(&raw)
             .with_context(|| format!("invalid JSON config {}", path.display()))
+    }
+}
+
+impl DeploymentMetadata {
+    fn read(path: &Path) -> Result<Self> {
+        let raw = fs::read_to_string(path)
+            .with_context(|| format!("failed to read deployment metadata {}", path.display()))?;
+        reject_secret_like_config(&raw)?;
+        serde_json::from_str(&raw)
+            .with_context(|| format!("invalid deployment metadata {}", path.display()))
     }
 }
 
@@ -659,6 +684,176 @@ fn write_metadata(path: &Path, metadata: &DeploymentMetadata) -> Result<()> {
         .with_context(|| format!("failed to write {}", path.display()))
 }
 
+// Milestone 24: verify public deployment metadata against live RPC account data.
+fn smoke(metadata: &DeploymentMetadata) -> Result<()> {
+    if !matches!(metadata.cluster.as_str(), "localnet" | "devnet") {
+        bail!("metadata cluster must be localnet or devnet");
+    }
+    if metadata.staking_program != staking_pool::ID.to_string() {
+        bail!("metadata staking program does not match compiled program id");
+    }
+    if metadata.demo_faucet_program != demo_faucet::ID.to_string() {
+        bail!("metadata faucet program does not match compiled program id");
+    }
+
+    let client =
+        RpcClient::new_with_commitment(rpc_url_from_label(metadata), CommitmentConfig::confirmed());
+
+    let staking_program = parse_pubkey(&metadata.staking_program, "staking_program")?;
+    let demo_faucet_program = parse_pubkey(&metadata.demo_faucet_program, "demo_faucet_program")?;
+    let stake_mint_key = parse_pubkey(&metadata.stake_mint, "stake_mint")?;
+    let reward_mint_key = parse_pubkey(&metadata.reward_mint, "reward_mint")?;
+    let pool_key = parse_pubkey(&metadata.pool, "pool")?;
+    let pool_authority = parse_pubkey(&metadata.pool_authority, "pool_authority")?;
+    let stake_vault_key = parse_pubkey(&metadata.stake_vault, "stake_vault")?;
+    let reward_vault_key = parse_pubkey(&metadata.reward_vault, "reward_vault")?;
+    let faucet_authority = parse_pubkey(&metadata.faucet_authority, "faucet_authority")?;
+    let payer = parse_pubkey(&metadata.payer, "payer")?;
+
+    ensure_program_deployed(&client, &staking_program, "staking_pool")?;
+    ensure_program_deployed(&client, &demo_faucet_program, "demo_faucet")?;
+
+    let stake_mint = unpack_mint(&client, &stake_mint_key, "stake_mint")?;
+    let reward_mint = unpack_mint(&client, &reward_mint_key, "reward_mint")?;
+    if stake_mint.decimals != TOKEN_DECIMALS || reward_mint.decimals != TOKEN_DECIMALS {
+        bail!("stake and reward mints must both use six decimals");
+    }
+    if stake_mint.mint_authority != Some(faucet_authority).into() {
+        bail!("stake mint authority does not match Faucet Authority PDA");
+    }
+    if stake_mint.freeze_authority.is_some() {
+        bail!("stake mint freeze authority must be disabled");
+    }
+    if reward_mint.mint_authority.is_some() {
+        bail!("reward mint authority is still enabled");
+    }
+    if reward_mint.freeze_authority.is_some() {
+        bail!("reward mint freeze authority must be disabled");
+    }
+    if reward_mint.supply != metadata.initial_reward_supply_base_units {
+        bail!(
+            "reward mint supply is {}, expected {}",
+            reward_mint.supply,
+            metadata.initial_reward_supply_base_units
+        );
+    }
+
+    let stake_vault = unpack_token_account(&client, &stake_vault_key, "stake_vault")?;
+    let reward_vault = unpack_token_account(&client, &reward_vault_key, "reward_vault")?;
+    if stake_vault.mint != stake_mint_key || stake_vault.owner != pool_authority {
+        bail!("stake vault mint/authority does not match deployment metadata");
+    }
+    if reward_vault.mint != reward_mint_key || reward_vault.owner != pool_authority {
+        bail!("reward vault mint/authority does not match deployment metadata");
+    }
+
+    let pool_account = client
+        .get_account(&pool_key)
+        .context("pool account missing")?;
+    let mut pool_data = pool_account.data.as_slice();
+    let pool = staking_pool::state::Pool::try_deserialize(&mut pool_data)
+        .context("pool account could not be deserialized")?;
+    if pool.initializer != payer
+        || pool.pool_id != metadata.pool_id
+        || pool.stake_mint != stake_mint_key
+        || pool.reward_mint != reward_mint_key
+        || pool.stake_vault != stake_vault_key
+        || pool.reward_vault != reward_vault_key
+    {
+        bail!("pool state does not match deployment metadata");
+    }
+    if pool.admins.map(|admin| admin.to_string()) != metadata.admins {
+        bail!("pool admins do not match deployment metadata");
+    }
+    if stake_vault.amount < pool.total_staked {
+        bail!("principal solvency failed");
+    }
+    let reward_backing_scaled = u128::from(reward_vault.amount)
+        .checked_mul(staking_pool::constants::REWARD_PRECISION)
+        .ok_or_else(|| anyhow!("reward vault backing scale overflow"))?;
+    let reward_obligation_scaled = pool
+        .remaining_reward_budget_scaled
+        .checked_add(pool.allocated_liability_scaled)
+        .ok_or_else(|| anyhow!("pool reward obligation overflow"))?;
+    if reward_obligation_scaled > reward_backing_scaled {
+        bail!("reward solvency failed");
+    }
+
+    let slot = client.get_slot().context("failed to fetch current slot")?;
+    println!("Milestone 24 smoke passed.");
+    println!("slot: {slot}");
+    println!(
+        "staking program: {}",
+        explorer_link(metadata, &metadata.staking_program)
+    );
+    println!(
+        "demo faucet: {}",
+        explorer_link(metadata, &metadata.demo_faucet_program)
+    );
+    println!("pool: {}", explorer_link(metadata, &metadata.pool));
+    println!(
+        "stake mint: {}",
+        explorer_link(metadata, &metadata.stake_mint)
+    );
+    println!(
+        "reward mint: {}",
+        explorer_link(metadata, &metadata.reward_mint)
+    );
+    println!(
+        "reward mint authority revoked: {}",
+        reward_mint.mint_authority.is_none()
+    );
+    println!(
+        "principal solvency: {} >= {}",
+        stake_vault.amount, pool.total_staked
+    );
+    println!(
+        "reward solvency: {} <= {}",
+        reward_obligation_scaled, reward_backing_scaled
+    );
+    Ok(())
+}
+
+fn rpc_url_from_label(metadata: &DeploymentMetadata) -> String {
+    match metadata.rpc_url_label.as_str() {
+        "devnet" => "https://api.devnet.solana.com".to_string(),
+        "localnet" => "http://127.0.0.1:8899".to_string(),
+        other => other.to_string(),
+    }
+}
+
+fn parse_pubkey(value: &str, label: &str) -> Result<Pubkey> {
+    Pubkey::from_str(value).with_context(|| format!("invalid {label} pubkey"))
+}
+
+fn unpack_mint(client: &RpcClient, key: &Pubkey, label: &str) -> Result<Mint> {
+    let account = client
+        .get_account(key)
+        .with_context(|| format!("{label} account missing: {key}"))?;
+    if account.owner != spl_token::ID {
+        bail!("{label} is not owned by the original SPL Token Program");
+    }
+    Mint::unpack(&account.data).with_context(|| format!("{label} account is not a mint"))
+}
+
+fn unpack_token_account(client: &RpcClient, key: &Pubkey, label: &str) -> Result<TokenAccount> {
+    let account = client
+        .get_account(key)
+        .with_context(|| format!("{label} account missing: {key}"))?;
+    if account.owner != spl_token::ID {
+        bail!("{label} is not owned by the original SPL Token Program");
+    }
+    TokenAccount::unpack(&account.data).with_context(|| format!("{label} account is invalid"))
+}
+
+fn explorer_link(metadata: &DeploymentMetadata, address: &str) -> String {
+    match metadata.cluster.as_str() {
+        "devnet" => format!("https://explorer.solana.com/address/{address}?cluster=devnet"),
+        "localnet" => format!("{address} (localnet)"),
+        _ => address.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -703,5 +898,63 @@ mod tests {
     fn milestone19_public_rpc_labels_are_stable() {
         assert_eq!(public_rpc_label("https://api.devnet.solana.com"), "devnet");
         assert_eq!(public_rpc_label("http://127.0.0.1:8899"), "localnet");
+    }
+
+    #[test]
+    fn milestone24_rpc_labels_resolve_for_smoke() {
+        let metadata = sample_metadata("devnet");
+
+        assert_eq!(
+            rpc_url_from_label(&metadata),
+            "https://api.devnet.solana.com"
+        );
+
+        let custom = sample_metadata("http://127.0.0.1:8899");
+
+        assert_eq!(rpc_url_from_label(&custom), "http://127.0.0.1:8899");
+    }
+
+    #[test]
+    fn milestone24_explorer_links_use_devnet_cluster() {
+        let metadata = sample_metadata("devnet");
+
+        assert_eq!(
+            explorer_link(&metadata, &metadata.pool),
+            format!(
+                "https://explorer.solana.com/address/{}?cluster=devnet",
+                metadata.pool
+            )
+        );
+    }
+
+    fn sample_metadata(rpc_url_label: &str) -> DeploymentMetadata {
+        DeploymentMetadata {
+            milestone: 19,
+            cluster: "devnet".to_string(),
+            rpc_url_label: rpc_url_label.to_string(),
+            staking_program: staking_pool::ID.to_string(),
+            demo_faucet_program: demo_faucet::ID.to_string(),
+            payer: Pubkey::new_unique().to_string(),
+            upgrade_authority: Pubkey::new_unique().to_string(),
+            pool_id: 0,
+            stake_mint: Pubkey::new_unique().to_string(),
+            reward_mint: Pubkey::new_unique().to_string(),
+            reward_treasury_ata: Pubkey::new_unique().to_string(),
+            pool: Pubkey::new_unique().to_string(),
+            pool_authority: Pubkey::new_unique().to_string(),
+            stake_vault: Pubkey::new_unique().to_string(),
+            reward_vault: Pubkey::new_unique().to_string(),
+            faucet_authority: Pubkey::new_unique().to_string(),
+            admins: [
+                Pubkey::new_unique().to_string(),
+                Pubkey::new_unique().to_string(),
+                Pubkey::new_unique().to_string(),
+            ],
+            max_reward_rate_per_slot_base_units: DEVNET_MAX_REWARD_RATE_PER_SLOT,
+            initial_reward_supply_base_units: REWARD_SUPPLY_TOKENS * BASE_UNITS_PER_TOKEN,
+            initial_reward_funding_base_units: BASE_UNITS_PER_TOKEN,
+            reward_mint_authority_revoked: true,
+            notes: vec![],
+        }
     }
 }

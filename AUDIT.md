@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestones 22-23 implemented; full local harness run pending user handoff
+Status: Milestones 24-25 tooling and documentation prepared; Devnet evidence pending user handoff
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -510,3 +510,110 @@ residual risk
   pending the handoff command. The browser segment currently validates rendered
   action surfaces and prepared transaction plans; live wallet-signed browser
   transaction submission remains future work.
+
+### Milestone 24 - Devnet Deployment And Smoke Evidence
+
+- Scope implemented: Added a `smoke` mode to the Rust deployment helper and a
+  `scripts/devnet/smoke.sh` wrapper. The smoke path reads
+  `deployments/devnet.json`, rejects secret-like metadata, checks live RPC
+  account data, verifies both program accounts are executable, validates
+  six-decimal original SPL Token mints, proves the STAKE mint authority is the
+  Faucet Authority PDA, proves the REWARD mint authority is revoked, checks
+  disabled freeze authorities, checks Pool fields against metadata, validates
+  both vault token accounts are owned by the Pool Authority PDA, and asserts
+  principal and reward solvency.
+- Security and economic rules touched: The smoke command is read-only and does
+  not sign transactions. It reduces false-evidence risk by checking that public
+  frontend/deployment metadata matches the real deployed accounts and the
+  fixed-supply reward rule.
+- Tests run: `cargo test -p deployment_tools`; `cargo test --workspace`;
+  `cargo clippy --workspace --all-targets -- -D warnings`; `cargo fmt --all
+  -- --check`; `bash -n scripts/devnet/smoke.sh`; `bash -n
+  tests/local-e2e/run.sh`; `npm run typecheck`; `npm test`; `npm run build`;
+  `npm run e2e`; `git diff --check`.
+- Result: Passed. The helper test suite now includes Milestone 24 coverage for
+  RPC label resolution and Devnet Explorer link generation in addition to the
+  existing Milestone 19 secret-safety tests.
+- Residual risk or limitation: Actual Devnet deployment, setup signatures,
+  smoke output, and Explorer evidence require the user's funded Devnet wallet
+  and have not been recorded yet. Program deployment signatures are produced by
+  `anchor deploy` and must be copied into public evidence manually.
+
+### Milestone 25 - Final Self-Audit And Research Package
+
+- Scope implemented: Replaced placeholder public research and diagram files
+  with a portfolio-ready research narrative, account map, user flow,
+  governance flow, and reward-solvency diagram. Added a Devnet evidence
+  template and updated deployment/script documentation for the final evidence
+  workflow.
+- Security and economic rules touched: The final package repeats the
+  non-production disclaimer, distinguishes internal self-audit from independent
+  audit, documents trusted upgrade authority, Sybilable faucet limits, public
+  RPC assumptions, direct vault surplus behavior, and the current frontend
+  limitation that transactions are prepared but not live-submitted.
+- Tests run: Documentation edits are covered by `cargo fmt --all -- --check`,
+  `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D
+  warnings`, `npm run typecheck`, `npm test`, `npm run build`, `npm run e2e`,
+  shell syntax checks, and `git diff --check`.
+- Result: Prepared but not final. The final audit cannot be closed until
+  Milestone 24 Devnet evidence and the applicable full verification commands
+  are complete.
+- Residual risk or limitation: The public package is ready for evidence
+  insertion, but the repository must not claim Milestone 25 complete until the
+  Devnet smoke evidence is recorded.
+
+## Consolidated Threat Model
+
+This self-audit assumes honest Solana runtime signature checks, honest Clock
+sysvar slots, correct execution of the original SPL Token Program, and no
+private-key compromise. The deployment wallet remains upgrade authority on
+Devnet, so it can replace program code and is more powerful than pool admins.
+
+Primary assets:
+
+- User STAKE principal in the Stake Vault.
+- Funded REWARD budget and allocated reward liability in the Reward Vault.
+- Pool, Position, Proposal, and Faucet Claim account integrity.
+- Admin authority and proposal state.
+- Public deployment metadata used by the frontend.
+
+Primary risks and controls:
+
+- Principal theft: vault authority is a PDA controlled only by staking-program
+  signer seeds; all vault outflows validate canonical accounts first.
+- Reward overpayment: checkpoint, settlement, and claim math use checked
+  integer arithmetic and assert reward backing.
+- Backpay or paused-slot accrual: pause and unpause update checkpoint
+  boundaries using trusted slots.
+- Account substitution: Anchor constraints and explicit checks bind pool,
+  position, proposal, mint, vault, token authority, and Token Program IDs.
+- Governance abuse: proposals are allowlisted, immutable, epoch-bound,
+  expiring, threshold-approved, and one-time executable.
+- Faucet replay: each wallet/mint pair creates one permanent claim receipt PDA.
+- False deployment evidence: Milestone 24 smoke checks public metadata against
+  live RPC account data.
+
+## Consolidated Evidence Matrix
+
+```text
+Arithmetic and reward math        staking_pool unit tests
+PDA/account schemas               state_pda tests
+Token CPI flows                   LiteSVM milestone9_12_token_flows
+Pause/emergency behavior          LiteSVM milestone13_14 coverage
+Governance lifecycle              LiteSVM milestone15_16_governance
+Faucet replay and mint authority  LiteSVM milestone17_demo_faucet
+Cross-instruction invariants      LiteSVM milestone18
+Setup validation                  deployment_tools unit tests
+Frontend preparation              Vitest and Playwright app tests
+Local harness                     tests/local-e2e/run.sh
+Devnet smoke                      scripts/devnet/smoke.sh, pending live run
+```
+
+## Final Limitations
+
+This repository is educational Devnet software. It is not production-ready, has
+not received an independent professional audit, and must not custody assets
+with real value. The faucet has no Sybil resistance, Devnet may reset, public
+RPC can be stale or unavailable, frontend estimates are not authoritative, and
+the current frontend prepares transactions without completing live wallet
+submission.

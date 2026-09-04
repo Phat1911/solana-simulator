@@ -43,3 +43,17 @@ tests/local-e2e/run.sh
 It creates disposable fixture keypairs under `.private/local-e2e`, starts a
 fresh local validator, runs setup, and then executes the current LiteSVM and
 frontend checks.
+
+## Milestone 24 Devnet Smoke
+
+After both programs are deployed and `scripts/devnet/setup.sh setup` has
+written `deployments/devnet.json`, run:
+
+```bash
+scripts/devnet/smoke.sh
+```
+
+The smoke command checks live RPC account data against public metadata:
+executable program accounts, six-decimal mints, revoked REWARD mint authority,
+disabled freeze authorities, Pool fields, PDA-owned vaults, and principal and
+reward solvency.

@@ -66,7 +66,9 @@ harness now starts a fresh validator, loads both programs, creates fixture
 wallets and mints, initializes/funds the pool, and runs the current program and
 browser suites from one command.
 
-Signed browser submission and real Devnet smoke evidence remain planned work.
+Milestones 24 and 25 now have Devnet smoke tooling and public research/audit
+package drafts prepared. Signed browser submission, the real Devnet deploy,
+Devnet smoke output, and final evidence insertion remain planned handoff work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -230,6 +232,16 @@ The helper creates six-decimal STAKE and REWARD mints, mints the fixed REWARD
 supply, revokes REWARD mint authority, initializes the pool, funds rewards
 through the staking program, and can be rerun without double-funding the
 configured initial amount.
+
+After deploying both programs to Devnet and running setup, Milestone 24 smoke
+verification is:
+
+```bash
+scripts/devnet/smoke.sh
+```
+
+Record public addresses, transaction signatures, smoke output, and Explorer
+links using [DEVNET_EVIDENCE_TEMPLATE.md](./deployments/DEVNET_EVIDENCE_TEMPLATE.md).
 
 ## Local E2E Harness
 
