@@ -317,6 +317,17 @@ h2 {
   font: inherit;
 }
 
+.amount-field select {
+  width: min(260px, 100%);
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--text);
+  font: inherit;
+}
+
 .amount-field input:focus {
   border-color: var(--accent);
   outline: 2px solid #b9ded4;
@@ -366,6 +377,66 @@ h2 {
   color: var(--danger);
 }
 
+.admin-panel {
+  margin-top: 18px;
+}
+
+.admin-form-grid,
+.proposal-action-row {
+  display: grid;
+  align-items: end;
+  gap: 10px;
+}
+
+.admin-form-grid {
+  grid-template-columns: minmax(220px, 1fr) 150px 140px;
+  margin-top: 14px;
+}
+
+.admin-form-grid button,
+.proposal-action-row button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.admin-form-grid button:disabled,
+.proposal-action-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.proposal-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.proposal-action-row {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  min-height: 44px;
+}
+
+.proposal-action-row span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-action-grid {
+  margin-top: 14px;
+}
+
 .transaction-status {
   display: flex;
   align-items: center;
@@ -390,6 +461,12 @@ h2 {
   .detail-list.horizontal,
   .action-balances,
   .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .proposal-editor,
+  .admin-form-grid,
+  .proposal-action-row {
     grid-template-columns: 1fr;
   }
 

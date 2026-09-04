@@ -20,3 +20,6 @@ app/CLAUDE.md
 
 # Milestone 19: local deployment config may reference wallet/keypair paths.
 scripts/devnet/config.local.json
+
+# Milestone 23: local validator metadata is reproducible and machine-specific.
+deployments/local-e2e.generated.json

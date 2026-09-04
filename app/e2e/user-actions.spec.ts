@@ -37,11 +37,14 @@ test("milestone 21 user action surface renders with disabled transaction buttons
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { name: "User State" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Actions" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Actions", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Proposal Actions" })).toBeVisible();
   await expect(page.getByLabel("Amount")).toHaveValue("1");
   await expect(page.getByRole("button", { name: "Claim Faucet" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Stake", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Emergency Withdraw" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Pause Pool" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Create Proposal" })).toBeDisabled();
   const actionPanel = page.locator("section").filter({ has: page.getByRole("heading", { name: "Actions" }) });
   await expect(actionPanel.getByText("Estimated Pending")).toBeVisible();
 });
@@ -57,4 +60,18 @@ test("milestone 21 prepares first stake with connected wallet", async ({ page })
   await page.getByRole("button", { name: "Stake", exact: true }).click();
 
   await expect(page.getByText("Stake: 2 instructions")).toBeVisible();
+});
+
+test("milestone 22 shows admin proposal surface before live signatures", async ({ page }) => {
+  await registerFakeWallet(page);
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  await page.getByRole("button", { name: "Test Wallet" }).click();
+  await expect(page.getByText("Connected")).toBeVisible();
+
+  await expect(page.getByText("Not admin")).toBeVisible();
+  await expect(page.getByLabel("Fund")).toHaveValue("100");
+  await expect(page.getByLabel("Proposal")).toHaveValue("0");
+  await expect(page.getByRole("button", { name: "Fund Rewards" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Approve" })).toBeDisabled();
 });

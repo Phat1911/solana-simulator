@@ -3,14 +3,16 @@
 import { Activity, Database, ExternalLink, Network, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { AdminActions } from "@/components/admin-actions";
 import { UserActions } from "@/components/user-actions";
 import { WalletPanel } from "@/components/wallet-panel";
 import { formatBaseUnits, shortAddress } from "@/lib/amounts";
-import { estimatePendingRewardScaled, formatScaledReward, type PoolState, type PositionState } from "@/lib/account-decoders";
+import { estimatePendingRewardScaled, formatScaledReward, type PoolState, type PositionState, type ProposalState } from "@/lib/account-decoders";
 import { type DeploymentConfig } from "@/lib/deployment";
 import { type AccountReadState, readAccount } from "@/lib/rpc";
-import { deriveAssociatedTokenAccount, derivePoolAuthorityPda, derivePositionPda } from "@/lib/pdas";
-import { readPoolState, readPositionState, readTokenBalance } from "@/lib/rpc";
+import { deriveAssociatedTokenAccount, derivePoolAuthorityPda, derivePositionPda, deriveProposalPda } from "@/lib/pdas";
+import { readPoolState, readPositionState, readProposalState, readTokenBalance } from "@/lib/rpc";
+import { type AdminActionContext } from "@/lib/admin-instructions";
 import { type UserActionContext } from "@/lib/user-instructions";
 
 function statusLabel(account: AccountReadState): string {
@@ -62,6 +64,8 @@ export function Dashboard({ initialDeployment }: { initialDeployment: Deployment
   const [userRewardAta, setUserRewardAta] = useState<string>();
   const [stakeBalance, setStakeBalance] = useState<bigint>();
   const [rewardBalance, setRewardBalance] = useState<bigint>();
+  const [inspectedProposalId, setInspectedProposalId] = useState("0");
+  const [proposalState, setProposalState] = useState<ProposalState>();
   const [isRefreshing, setRefreshing] = useState(false);
 
   const resolved = {
@@ -90,6 +94,17 @@ export function Dashboard({ initialDeployment }: { initialDeployment: Deployment
           stakeMint: resolved.stakeMint,
           rewardMint: resolved.rewardMint,
           stakeVault: resolved.stakeVault,
+          rewardVault: resolved.rewardVault,
+        }
+      : undefined;
+
+  const adminActionContext: AdminActionContext | undefined =
+    connectedAccount && deployment.stakingProgram && resolved.pool && resolved.rewardMint && resolved.rewardVault
+      ? {
+          user: connectedAccount,
+          stakingProgram: deployment.stakingProgram,
+          pool: resolved.pool,
+          rewardMint: resolved.rewardMint,
           rewardVault: resolved.rewardVault,
         }
       : undefined;
@@ -139,6 +154,26 @@ export function Dashboard({ initialDeployment }: { initialDeployment: Deployment
     setRewardBalance(nextRewardBalance);
   }
 
+  async function refreshProposal() {
+    if (!deployment.stakingProgram || !resolved.pool) {
+      setProposalState(undefined);
+      return;
+    }
+
+    try {
+      const proposalId = inspectedProposalId.trim() === "" ? undefined : BigInt(inspectedProposalId);
+      if (proposalId === undefined) {
+        setProposalState(undefined);
+        return;
+      }
+
+      const [proposalAddress] = await deriveProposalPda(deployment.stakingProgram, resolved.pool, proposalId);
+      setProposalState(await readProposalState(deployment.endpoint, proposalAddress.toString()));
+    } catch {
+      setProposalState(undefined);
+    }
+  }
+
   useEffect(() => {
     void refreshPool();
   }, []);
@@ -146,6 +181,14 @@ export function Dashboard({ initialDeployment }: { initialDeployment: Deployment
   useEffect(() => {
     void refreshUser();
   }, [connectedAccount, poolState]);
+
+  useEffect(() => {
+    setInspectedProposalId((poolState?.nextProposalId ?? 0n).toString());
+  }, [poolState?.nextProposalId]);
+
+  useEffect(() => {
+    void refreshProposal();
+  }, [inspectedProposalId, poolState]);
 
   return (
     <main className="app-shell">
@@ -283,6 +326,14 @@ export function Dashboard({ initialDeployment }: { initialDeployment: Deployment
         rewardBalance={rewardBalance}
         stakeBalance={stakeBalance}
         stakedAmount={positionState?.stakedAmount}
+      />
+
+      <AdminActions
+        context={adminActionContext}
+        inspectedProposalId={inspectedProposalId}
+        onInspectedProposalIdChange={setInspectedProposalId}
+        poolState={poolState}
+        proposalState={proposalState}
       />
     </main>
   );

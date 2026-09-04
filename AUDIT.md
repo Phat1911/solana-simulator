@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestone 21 complete
+Status: Milestones 22-23 implemented; full local harness run pending user handoff
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -461,3 +461,52 @@ residual risk
   account addresses for browser coverage. Full local-validator transaction
   journeys, real wallet differences, RPC staleness handling, and Devnet
   Explorer evidence remain future milestones.
+
+### Milestone 22 - Admin And Proposal Flows
+
+- Scope implemented: Added milestone-marked frontend builders for reward
+  funding, immediate pause, proposal creation, proposal approval, proposal
+  execution, and proposal closure. Added Proposal PDA derivation, Proposal
+  account decoding, Proposal RPC reads, and an admin dashboard panel that shows
+  wallet eligibility, `admin_epoch`, next proposal ID, exact selected action
+  parameters, loaded proposal action, approval count, expiry slot, execution
+  state, and creator.
+- Security and economic rules touched: Frontend builders use the same
+  canonical Proposal PDA seed recipe as the staking program and keep all token
+  amounts as integer base units. Admin-only buttons are gated by current Pool
+  account data, but this remains advisory UI gating; on-chain admin membership,
+  epoch, expiry, approval, and execution checks remain authoritative.
+- Tests run: `npm run typecheck`; `npm test`; `npm run e2e`.
+- Result: Passed. TypeScript completed with `tsc --noEmit`; Vitest ran 8 test
+  files and 26 tests covering admin instruction discriminators, proposal action
+  encoding, account roles, proposal PDA derivation, variable Proposal account
+  decoding, and admin component display/gating. Playwright ran 3 Chromium tests
+  covering the disconnected user/admin surface, connected fake-wallet stake
+  preparation, and connected admin surface gating before live signatures.
+- Residual risk or limitation: The browser tests still use fake Wallet Standard
+  accounts and verify transaction preparation, not signed submission to a live
+  validator. Two-real-wallet approval/execution, stale/expired proposal
+  browser journeys, and transaction confirmation UX remain future hardening.
+
+### Milestone 23 - Local End-To-End System Test
+
+- Scope implemented: Added `tests/local-e2e/run.sh`, a one-command local
+  harness that creates ignored fixture wallets, builds both Anchor programs,
+  starts a fresh `solana-test-validator`, loads the staking and faucet program
+  shared objects, airdrops the local payer, generates setup config, initializes
+  and funds a local pool through the deployment helper, then runs the current
+  LiteSVM invariant suite plus frontend unit and browser suites. Added local
+  E2E documentation and ignore rules for reproducible generated local metadata.
+- Security and economic rules touched: The harness keeps keypairs under
+  `.private/local-e2e`, writes only public machine-specific metadata to the
+  ignored `deployments/local-e2e.generated.json`, and reuses the Milestone 18
+  invariant suite for Alice/Bob reward distribution, pause behavior, emergency
+  forfeiture, governance rate change, admin replacement, proposal invalidation,
+  solvency, conservation, and rollback checks.
+- Tests run: `bash -n tests/local-e2e/run.sh`.
+- Result: Passed syntax validation. The full harness is intentionally handed
+  off because it can take a while: `tests/local-e2e/run.sh`.
+- Residual risk or limitation: Full local-validator execution evidence is
+  pending the handoff command. The browser segment currently validates rendered
+  action surfaces and prepared transaction plans; live wallet-signed browser
+  transaction submission remains future work.

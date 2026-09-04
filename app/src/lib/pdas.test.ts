@@ -8,6 +8,7 @@ import {
   deriveFaucetClaimPda,
   derivePoolAuthorityPda,
   derivePositionPda,
+  deriveProposalPda,
 } from "@/lib/pdas";
 
 const STAKING_PROGRAM = "Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ";
@@ -44,5 +45,13 @@ describe("canonical frontend derivations", () => {
     expect(TOKEN_PROGRAM_ADDRESS.toString()).toBe("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
     expect(ASSOCIATED_TOKEN_PROGRAM_ADDRESS.toString()).toBe("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
     expect(stakeAta.toString()).not.toBe(rewardAta.toString());
+  });
+
+  it("derives proposal PDAs by pool and little-endian proposal id", async () => {
+    const [proposalZero] = await deriveProposalPda(STAKING_PROGRAM, POOL, 0n);
+    const [proposalOne] = await deriveProposalPda(STAKING_PROGRAM, POOL, 1n);
+
+    expect(proposalZero.toString()).not.toBe(proposalOne.toString());
+    expect(proposalZero.toString()).not.toBe(POOL);
   });
 });

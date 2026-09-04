@@ -12,6 +12,7 @@ export type PoolState = {
   rewardVault: string;
   admins: readonly string[];
   adminEpoch: bigint;
+  nextProposalId: bigint;
   paused: boolean;
   maxRewardRatePerSlot: bigint;
   rewardRatePerSlot: bigint;
@@ -29,6 +30,25 @@ export type PositionState = {
   stakedAmount: bigint;
   rewardDebtScaled: bigint;
   pendingRewardScaled: bigint;
+};
+
+export type ProposalActionState =
+  | { kind: "set-reward-rate"; newRate: bigint }
+  | { kind: "unpause-pool" }
+  | { kind: "replace-admin"; oldAdmin: string; newAdmin: string };
+
+export type ProposalState = {
+  version: number;
+  pool: string;
+  proposalId: bigint;
+  creator: string;
+  adminEpoch: bigint;
+  action: ProposalActionState;
+  approvals: readonly boolean[];
+  approvalCount: number;
+  createdSlot: bigint;
+  expiresAtSlot: bigint;
+  executed: boolean;
 };
 
 export const REWARD_PRECISION = 1_000_000_000n;
@@ -63,6 +83,7 @@ export function decodePoolState(data: Uint8Array): PoolState {
     rewardVault: pubkey(data, 147),
     admins: [pubkey(data, 179), pubkey(data, 211), pubkey(data, 243)],
     adminEpoch: u64(data, 275),
+    nextProposalId: u64(data, 283),
     paused: data[291] === 1,
     maxRewardRatePerSlot: u64(data, 292),
     rewardRatePerSlot: u64(data, 300),
@@ -71,6 +92,61 @@ export function decodePoolState(data: Uint8Array): PoolState {
     accRewardPerStakeScaled: u128(data, 324),
     remainingRewardBudgetScaled: u128(data, 340),
     allocatedLiabilityScaled: u128(data, 356),
+  };
+}
+
+function decodeProposalAction(data: Uint8Array, offset: number): { action: ProposalActionState; nextOffset: number } {
+  const variant = data[offset];
+
+  switch (variant) {
+    case 0:
+      return {
+        action: { kind: "set-reward-rate", newRate: u64(data, offset + 1) },
+        nextOffset: offset + 9,
+      };
+    case 1:
+      return {
+        action: { kind: "unpause-pool" },
+        nextOffset: offset + 1,
+      };
+    case 2:
+      return {
+        action: {
+          kind: "replace-admin",
+          oldAdmin: pubkey(data, offset + 1),
+          newAdmin: pubkey(data, offset + 33),
+        },
+        nextOffset: offset + 65,
+      };
+    default:
+      throw new Error("unknown proposal action variant");
+  }
+}
+
+// Milestone 22: proposal reads expose action, approval, epoch, expiry, and execution status.
+export function decodeProposalState(data: Uint8Array): ProposalState {
+  if (data.length < 107) {
+    throw new Error("proposal account data is too short");
+  }
+
+  const decodedAction = decodeProposalAction(data, 89);
+  const approvalsOffset = decodedAction.nextOffset;
+  if (data.length < approvalsOffset + 21) {
+    throw new Error("proposal account data is too short");
+  }
+
+  return {
+    version: data[8] ?? 0,
+    pool: pubkey(data, 9),
+    proposalId: u64(data, 41),
+    creator: pubkey(data, 49),
+    adminEpoch: u64(data, 81),
+    action: decodedAction.action,
+    approvals: [data[approvalsOffset] === 1, data[approvalsOffset + 1] === 1, data[approvalsOffset + 2] === 1],
+    approvalCount: data[approvalsOffset + 3] ?? 0,
+    createdSlot: u64(data, approvalsOffset + 4),
+    expiresAtSlot: u64(data, approvalsOffset + 12),
+    executed: data[approvalsOffset + 20] === 1,
   };
 }
 

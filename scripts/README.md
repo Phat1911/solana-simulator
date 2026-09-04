@@ -30,3 +30,16 @@ metadata only.
 
 Never commit `scripts/devnet/config.local.json`, `.private/`, wallet keypairs,
 seed phrases, or private RPC URLs.
+
+## Milestone 23 Local Harness
+
+The local end-to-end wrapper lives under `tests/local-e2e` because it exercises
+programs, setup scripts, and the browser app together:
+
+```bash
+tests/local-e2e/run.sh
+```
+
+It creates disposable fixture keypairs under `.private/local-e2e`, starts a
+fresh local validator, runs setup, and then executes the current LiteSVM and
+frontend checks.

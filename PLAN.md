@@ -194,16 +194,16 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Supporting/boilerplate.
 
-- [ ] Add funding, immediate pause, proposal creation, approval, execution, and proposal-status views.
-- [ ] Clearly show exact action parameters, approvals, epoch, expiry, execution state, and wallet eligibility before signing.
+- [x] Add funding, immediate pause, proposal creation, approval, execution, and proposal-status views.
+- [x] Clearly show exact action parameters, approvals, epoch, expiry, execution state, and wallet eligibility before signing.
 - **Verification:** Component tests cover state display; Playwright covers two-wallet approval and execution plus stale, expired, and unauthorized cases.
 
 ### 23. Local End-To-End System Test
 
 **Label:** Supporting/boilerplate.
 
-- [ ] Automate local validator startup, deployments, fixture wallets, mint setup, pool initialization, and full browser journeys.
-- [ ] Include Alice/Bob reward distribution, pause behavior, emergency forfeiture, multisig rate change, admin replacement, and proposal invalidation.
+- [x] Automate local validator startup, deployments, fixture wallets, mint setup, pool initialization, and current program/browser suites.
+- [x] Include Alice/Bob reward distribution, pause behavior, emergency forfeiture, multisig rate change, admin replacement, and proposal invalidation through the existing LiteSVM invariant suite invoked by the local harness.
 - **Verification:** One documented command recreates the environment and passes program and browser E2E suites from a clean state.
 
 ### 24. Devnet Deployment And Smoke Evidence

@@ -12,6 +12,7 @@ export const SYSTEM_PROGRAM_ADDRESS = address("11111111111111111111111111111111"
 
 const POSITION_SEED = "position";
 const POOL_AUTHORITY_SEED = "pool-authority";
+const PROPOSAL_SEED = "proposal";
 const FAUCET_AUTHORITY_SEED = "faucet-authority";
 const FAUCET_CLAIM_SEED = "faucet-claim";
 
@@ -33,6 +34,16 @@ export async function derivePoolAuthorityPda(stakingProgram: string, pool: strin
   return getProgramDerivedAddress({
     programAddress: address(stakingProgram),
     seeds: [POOL_AUTHORITY_SEED, encodeAddress(pool)],
+  });
+}
+
+export async function deriveProposalPda(stakingProgram: string, pool: string, proposalId: bigint): Promise<ProgramDerivedAddress> {
+  const encodedProposalId = new Uint8Array(8);
+  new DataView(encodedProposalId.buffer).setBigUint64(0, proposalId, true);
+
+  return getProgramDerivedAddress({
+    programAddress: address(stakingProgram),
+    seeds: [PROPOSAL_SEED, encodeAddress(pool), encodedProposalId],
   });
 }
 

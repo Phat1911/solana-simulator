@@ -1,7 +1,13 @@
 import { getAddressEncoder } from "@solana/kit";
 import { describe, expect, it } from "vitest";
 
-import { decodePoolState, decodePositionState, estimatePendingRewardScaled, REWARD_PRECISION } from "@/lib/account-decoders";
+import {
+  decodePoolState,
+  decodePositionState,
+  decodeProposalState,
+  estimatePendingRewardScaled,
+  REWARD_PRECISION,
+} from "@/lib/account-decoders";
 
 const encoder = getAddressEncoder();
 const A = "11111111111111111111111111111111";
@@ -37,6 +43,8 @@ describe("account decoders", () => {
     writeAddress(data, 179, A);
     writeAddress(data, 211, B);
     writeAddress(data, 243, C);
+    writeU64(data, 275, 2n);
+    writeU64(data, 283, 9n);
     data[291] = 1;
     writeU64(data, 292, 100_000_000n);
     writeU64(data, 300, 5_000_000n);
@@ -47,6 +55,8 @@ describe("account decoders", () => {
 
     expect(pool.version).toBe(1);
     expect(pool.poolId).toBe(7n);
+    expect(pool.adminEpoch).toBe(2n);
+    expect(pool.nextProposalId).toBe(9n);
     expect(pool.paused).toBe(true);
     expect(pool.totalStaked).toBe(2_000_000n);
     expect(pool.accRewardPerStakeScaled).toBe(3_000_000_000n);
@@ -69,5 +79,40 @@ describe("account decoders", () => {
 
     expect(position.stakedAmount).toBe(2_000_000n);
     expect(estimatePendingRewardScaled(pool, position)).toBe(5_000_000n * REWARD_PRECISION);
+  });
+
+  it("decodes proposal status and variable action payloads", () => {
+    const setRateData = new Uint8Array(162);
+    setRateData[8] = 1;
+    writeAddress(setRateData, 9, B);
+    writeU64(setRateData, 41, 3n);
+    writeAddress(setRateData, 49, A);
+    writeU64(setRateData, 81, 2n);
+    setRateData[89] = 0;
+    writeU64(setRateData, 90, 42_000_000n);
+    setRateData[98] = 1;
+    setRateData[101] = 1;
+    writeU64(setRateData, 102, 50n);
+    writeU64(setRateData, 110, 216_050n);
+
+    const setRate = decodeProposalState(setRateData);
+
+    expect(setRate.proposalId).toBe(3n);
+    expect(setRate.action).toEqual({ kind: "set-reward-rate", newRate: 42_000_000n });
+    expect(setRate.approvals).toEqual([true, false, false]);
+    expect(setRate.approvalCount).toBe(1);
+    expect(setRate.expiresAtSlot).toBe(216_050n);
+
+    const replaceData = new Uint8Array(186);
+    writeAddress(replaceData, 9, B);
+    replaceData[89] = 2;
+    writeAddress(replaceData, 90, A);
+    writeAddress(replaceData, 122, D);
+    replaceData[174] = 1;
+
+    const replace = decodeProposalState(replaceData);
+
+    expect(replace.action).toEqual({ kind: "replace-admin", oldAdmin: A, newAdmin: D });
+    expect(replace.executed).toBe(true);
   });
 });

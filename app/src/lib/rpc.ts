@@ -1,6 +1,13 @@
 import { address, createSolanaRpc, devnet } from "@solana/kit";
 
-import { decodePoolState, decodePositionState, type PoolState, type PositionState } from "@/lib/account-decoders";
+import {
+  decodePoolState,
+  decodePositionState,
+  decodeProposalState,
+  type PoolState,
+  type PositionState,
+  type ProposalState,
+} from "@/lib/account-decoders";
 
 export type AccountReadState =
   | { status: "not-configured" }
@@ -85,6 +92,11 @@ export async function readPoolState(endpoint: string, pool?: string): Promise<Po
 export async function readPositionState(endpoint: string, position?: string): Promise<PositionState | undefined> {
   const bytes = await readAccountBytes(endpoint, position);
   return bytes ? decodePositionState(bytes) : undefined;
+}
+
+export async function readProposalState(endpoint: string, proposal?: string): Promise<ProposalState | undefined> {
+  const bytes = await readAccountBytes(endpoint, proposal);
+  return bytes ? decodeProposalState(bytes) : undefined;
 }
 
 export async function readTokenBalance(endpoint: string, tokenAccount?: string): Promise<bigint | undefined> {

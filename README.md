@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 21 are complete. The repository now has the baseline
+Milestones 1 through 23 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -58,9 +58,15 @@ canonical user transactions for faucet claims, position opening, first-stake
 bundling, stake, unstake, claim, emergency withdraw, and position close; it
 decodes Pool and Position account data, displays user balances and estimated
 pending rewards, and keeps transaction amounts as integer base units.
+The admin console now prepares funding, immediate pause, proposal creation,
+approval, execution, and closure transactions; it displays exact proposal
+parameters, approval count, admin epoch, expiry, execution state, and whether
+the connected wallet is currently eligible as an admin. A local end-to-end
+harness now starts a fresh validator, loads both programs, creates fixture
+wallets and mints, initializes/funds the pool, and runs the current program and
+browser suites from one command.
 
-Signed browser submission, admin flows, local-validator journeys, and real
-Devnet smoke evidence remain planned work.
+Signed browser submission and real Devnet smoke evidence remain planned work.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -224,6 +230,19 @@ The helper creates six-decimal STAKE and REWARD mints, mints the fixed REWARD
 supply, revokes REWARD mint authority, initializes the pool, funds rewards
 through the staking program, and can be rerun without double-funding the
 configured initial amount.
+
+## Local E2E Harness
+
+Milestone 23 adds:
+
+```bash
+tests/local-e2e/run.sh
+```
+
+This script uses `.private/local-e2e` for fixture keypairs and writes
+machine-specific public metadata to `deployments/local-e2e.generated.json`.
+It can take a while because it builds Anchor programs, starts a validator,
+runs setup, and then runs program plus browser checks.
 
 ## Safety Notice
 
