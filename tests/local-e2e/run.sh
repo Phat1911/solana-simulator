@@ -43,6 +43,8 @@ PAYER="$(solana-keygen pubkey "$WORK_DIR/payer.json")"
 ADMIN_A="$(solana-keygen pubkey "$WORK_DIR/admin-a.json")"
 ADMIN_B="$(solana-keygen pubkey "$WORK_DIR/admin-b.json")"
 ADMIN_C="$(solana-keygen pubkey "$WORK_DIR/admin-c.json")"
+STAKING_PROGRAM_ID="Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ"
+DEMO_FAUCET_PROGRAM_ID="J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM"
 
 anchor build
 
@@ -51,8 +53,8 @@ solana-test-validator \
   --reset \
   --quiet \
   --ledger "$LEDGER_DIR" \
-  --bpf-program "$(solana address -k target/deploy/staking_pool-keypair.json)" target/deploy/staking_pool.so \
-  --bpf-program "$(solana address -k target/deploy/demo_faucet-keypair.json)" target/deploy/demo_faucet.so \
+  --bpf-program "$STAKING_PROGRAM_ID" target/deploy/staking_pool.so \
+  --bpf-program "$DEMO_FAUCET_PROGRAM_ID" target/deploy/demo_faucet.so \
   >"$WORK_DIR/validator.log" 2>&1 &
 VALIDATOR_PID=$!
 trap 'kill "$VALIDATOR_PID" >/dev/null 2>&1 || true' EXIT
