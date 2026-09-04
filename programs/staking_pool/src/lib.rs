@@ -33,7 +33,7 @@ use crate::{
     },
 };
 
-declare_id!("Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ");
+declare_id!("8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7");
 
 pub const PROGRAM_NAME: &str = "staking_pool";
 pub const PROGRAM_VERSION: u8 = 1;

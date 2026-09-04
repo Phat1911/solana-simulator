@@ -43,7 +43,7 @@ PAYER="$(solana-keygen pubkey "$WORK_DIR/payer.json")"
 ADMIN_A="$(solana-keygen pubkey "$WORK_DIR/admin-a.json")"
 ADMIN_B="$(solana-keygen pubkey "$WORK_DIR/admin-b.json")"
 ADMIN_C="$(solana-keygen pubkey "$WORK_DIR/admin-c.json")"
-STAKING_PROGRAM_ID="Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ"
+STAKING_PROGRAM_ID="8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7"
 DEMO_FAUCET_PROGRAM_ID="J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM"
 
 anchor build

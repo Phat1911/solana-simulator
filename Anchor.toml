@@ -3,7 +3,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-staking_pool = "Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ"
+staking_pool = "8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7"
 demo_faucet = "J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM"
 
 [registry]

@@ -16,7 +16,7 @@ import { SYSTEM_PROGRAM_ADDRESS, TOKEN_PROGRAM_ADDRESS } from "@/lib/pdas";
 
 const context: AdminActionContext = {
   user: "11111111111111111111111111111111",
-  stakingProgram: "Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ",
+  stakingProgram: "8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7",
   pool: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   rewardMint: "SysvarRent111111111111111111111111111111111",
   rewardVault: "SysvarC1ock11111111111111111111111111111111",

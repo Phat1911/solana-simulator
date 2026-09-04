@@ -414,7 +414,7 @@ residual risk
   builders, signing, CPI assumptions, or trusted client-side accounting were
   introduced.
 - Tests run: `npm run typecheck`; `npm test`; `npm run build`; localhost smoke
-  with `NEXT_PUBLIC_POOL=Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ npm run
+  with `NEXT_PUBLIC_POOL=<local-pool-address> npm run
   dev -- --hostname 127.0.0.1 --port 3000` and `curl -I
   http://127.0.0.1:3000`.
 - Result: Passed. TypeScript completed with `tsc --noEmit`; Vitest ran 2 test

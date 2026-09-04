@@ -11,7 +11,7 @@ import {
   deriveProposalPda,
 } from "@/lib/pdas";
 
-const STAKING_PROGRAM = "Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ";
+const STAKING_PROGRAM = "8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7";
 const FAUCET_PROGRAM = "J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM";
 const POOL = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const USER_A = "11111111111111111111111111111111";

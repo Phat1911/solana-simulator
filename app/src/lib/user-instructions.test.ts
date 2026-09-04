@@ -14,7 +14,7 @@ import {
 
 const context: UserActionContext = {
   user: "11111111111111111111111111111111",
-  stakingProgram: "Fg6PaFpoGXkYsidMpWxTWqkFrnDRBTTnyW6m9n6eGJZ",
+  stakingProgram: "8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7",
   demoFaucetProgram: "J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM",
   pool: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   stakeMint: "So11111111111111111111111111111111111111112",
