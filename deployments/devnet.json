@@ -1,0 +1,32 @@
+{
+  "milestone": 19,
+  "cluster": "devnet",
+  "rpc_url_label": "devnet",
+  "staking_program": "8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7",
+  "demo_faucet_program": "J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM",
+  "payer": "2W5TpA6NHR5bCuDA7btAy5aZwKk8PkM3KFHefztBdYJp",
+  "upgrade_authority": "2W5TpA6NHR5bCuDA7btAy5aZwKk8PkM3KFHefztBdYJp",
+  "pool_id": 0,
+  "stake_mint": "CdFFrhokPGEG4kuHvwKr7m2JqXpxJ8cbQxB3rQG8cXgx",
+  "reward_mint": "DxJ7zRQKNu9c6oeBuLuc6QRrMFZerq2hyGYPdxquWZgN",
+  "reward_treasury_ata": "BqhhFLj8S4igU24jm3tSJuxpDnN3Xea72SysWsnJexfT",
+  "pool": "EwAD89dRxyGAJZb6yHb5Lba3SjSUJiHsThBBqvgJ8k1T",
+  "pool_authority": "4JdgDdmVyCYFXymPab8jRzEsFyZ5trweW9eabth2pgor",
+  "stake_vault": "8iMZwCFwG4mp3nmVJfueF9iCEzbvF6w5rm5kHfgQ9THX",
+  "reward_vault": "62nWQZSgMXmPzUPVmWvZc2BdeBDRcUQGPD5fP5a5tuXp",
+  "faucet_authority": "Gq54tVVQaaU1NYR6uG1Czy8eWLA6aqHWMQMi8BPPc6uZ",
+  "admins": [
+    "2W5TpA6NHR5bCuDA7btAy5aZwKk8PkM3KFHefztBdYJp",
+    "GHYwa6ADkvizRn8ZzQXLcEFH9z5U27PTw2rHaU6a1w4P",
+    "EK6Ywiern5BgWV4n8wYV4wL8fwqVJKj18RaBqF7F9nZY"
+  ],
+  "max_reward_rate_per_slot_base_units": 100000000,
+  "initial_reward_supply_base_units": 1000000000000,
+  "initial_reward_funding_base_units": 10000000000,
+  "reward_mint_authority_revoked": true,
+  "notes": [
+    "Public metadata only; keypairs and private RPC URLs are intentionally excluded.",
+    "Direct vault transfers are surplus and are not accounting credit.",
+    "Educational Devnet deployment; not production-ready."
+  ]
+}

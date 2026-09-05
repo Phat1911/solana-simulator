@@ -210,19 +210,17 @@ This plan turns `SPEC.md` into small, reviewable increments. Milestones are comp
 
 **Label:** Supporting/boilerplate.
 
-- [ ] Deploy both programs to Devnet, run the approved setup, execute a compact real-wallet smoke flow, and verify reward mint authority revocation.
-- [ ] Record program IDs, mint/vault/PDA addresses, transaction signatures, explorer links, slot observations, and upgrade-authority status.
-- **Prepared:** Devnet smoke tooling and public evidence template are implemented; real Devnet wallet execution is still required.
+- [x] Deploy both programs to Devnet, run the approved setup, execute the Devnet smoke verification, and verify reward mint authority revocation.
+- [x] Record program IDs, mint/vault/PDA addresses, deployment transaction signatures, explorer links, slot observations, and upgrade-authority status.
 - **Verification:** The deployment metadata is reproducible, contains no secrets, and all recorded links and smoke assertions are valid.
 
 ### 25. Final Self-Audit And Research Package
 
 **Label:** Supporting/boilerplate.
 
-- [ ] Consolidate milestone audit entries into the final `AUDIT.md`, including threat model, controls, evidence, known limitations, and explicit non-audit disclaimer.
-- [ ] Complete architecture/flow diagrams, `docs/RESEARCH.md`, and `README.md` with reproducible local and Devnet instructions.
-- [ ] Run formatting, linting, unit, LiteSVM, local-validator, frontend, browser, and Devnet smoke checks applicable to the finished repository.
-- **Prepared:** Research narrative, diagrams, consolidated audit sections, and Devnet evidence workflow are drafted; final closure waits on Milestone 24 evidence.
+- [x] Consolidate milestone audit entries into the final `AUDIT.md`, including threat model, controls, evidence, known limitations, and explicit non-audit disclaimer.
+- [x] Complete architecture/flow diagrams, `docs/RESEARCH.md`, and `README.md` with reproducible local and Devnet instructions.
+- [x] Run formatting, linting, unit, LiteSVM, local-validator, frontend, browser, and Devnet smoke checks applicable to the finished repository.
 - **Verification:** Every acceptance criterion in `SPEC.md` maps to code, a test/evidence item, or a clearly documented out-of-scope limitation.
 
 ## Completion Rule

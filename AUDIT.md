@@ -1,6 +1,6 @@
 # Security Self-Audit
 
-Status: Milestones 24-25 tooling and documentation prepared; Devnet evidence pending user handoff
+Status: Milestones 1-25 complete with local, frontend, and Devnet smoke evidence
 Scope: Educational Solana Devnet staking research project  
 Production status: Not production-ready; no independent professional audit
 
@@ -533,17 +533,23 @@ residual risk
   -- --check`; `bash -n scripts/devnet/smoke.sh`; `bash -n
   tests/local-e2e/run.sh`; `npm run typecheck`; `npm test`; `npm run build`;
   `npm run e2e`; `git diff --check`.
-- Result: Passed. The helper test suite now includes Milestone 24 coverage for
-  RPC label resolution and Devnet Explorer link generation in addition to the
-  existing Milestone 19 secret-safety tests.
-- Residual risk or limitation: Actual Devnet deployment, setup signatures,
-  smoke output, and Explorer evidence require the user's funded Devnet wallet.
-  A partial Devnet attempt deployed `demo_faucet` at
-  `J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM` with signature
-  `5L6W2Kun5Xy4hVmrY9usaHdt2a9t8BD2BtsCcXtsXbGqNJV13sxhPt8nWCr8FQbTnxkc7T2spDDmSkYcJNnaSMiM`.
-  The corrected `staking_pool` redeploy is pending additional Devnet SOL after
-  an insufficient-funds error. Program deployment signatures are produced by
-  `anchor deploy` and must be copied into public evidence manually.
+- Result: Passed. The helper test suite includes Milestone 24 coverage for RPC
+  label resolution and Devnet Explorer link generation. The funded Devnet wallet
+  deployed `demo_faucet` at `J12YAqC7dWbVWVAFveRdJ8SJ3sYc6roP3WJekhy4bDkM`
+  with signature
+  `5L6W2Kun5Xy4hVmrY9usaHdt2a9t8BD2BtsCcXtsXbGqNJV13sxhPt8nWCr8FQbTnxkc7T2spDDmSkYcJNnaSMiM`
+  and `staking_pool` at `8Dkwd74ntycfAMWKeudjELGroj5pqUpWk4MyLijuf1W7` with
+  signature
+  `2kpx6iepQp7VaG2iygiCEHALuFTpiSRVKd3fY4PBy7zbcE4feTm4eLtopArZ2Ty77NKw5tATBtwymvwTLy8TToqf`.
+  The setup helper wrote public metadata to `deployments/devnet.json`, and
+  `scripts/devnet/smoke.sh` passed at slot `493276421`, including executable
+  program checks, mint authority checks, disabled freeze authorities, Pool and
+  vault metadata matching, principal solvency `0 >= 0`, and reward solvency
+  `10000000000000000000 <= 10000000000000000000`.
+- Residual risk or limitation: The setup helper output captured for this audit
+  does not include individual setup transaction signatures. Devnet may reset,
+  public RPC availability can vary, and the Devnet upgrade authority remains a
+  trusted educational key.
 
 ### Milestone 25 - Final Self-Audit And Research Package
 
@@ -561,12 +567,14 @@ residual risk
   `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D
   warnings`, `npm run typecheck`, `npm test`, `npm run build`, `npm run e2e`,
   shell syntax checks, and `git diff --check`.
-- Result: Prepared but not final. The final audit cannot be closed until
-  Milestone 24 Devnet evidence and the applicable full verification commands
-  are complete.
-- Residual risk or limitation: The public package is ready for evidence
-  insertion, but the repository must not claim Milestone 25 complete until the
-  Devnet smoke evidence is recorded.
+- Result: Passed. The public research narrative, diagrams, README status,
+  deployment metadata, Devnet evidence capture, consolidated threat model,
+  evidence matrix, and final limitations now reflect the completed local and
+  Devnet verification state.
+- Residual risk or limitation: This is still an internal self-audit, not an
+  independent professional audit. The frontend prepares canonical transactions
+  and has browser coverage, but live wallet submission UX is intentionally not
+  claimed as production-grade.
 
 ## Consolidated Threat Model
 
@@ -612,7 +620,7 @@ Cross-instruction invariants      LiteSVM milestone18
 Setup validation                  deployment_tools unit tests
 Frontend preparation              Vitest and Playwright app tests
 Local harness                     tests/local-e2e/run.sh
-Devnet smoke                      scripts/devnet/smoke.sh, pending live run
+Devnet smoke                      scripts/devnet/smoke.sh at slot 493276421
 ```
 
 ## Final Limitations

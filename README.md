@@ -12,7 +12,7 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 23 are complete. The repository now has the baseline
+Milestones 1 through 25 are complete. The repository now has the baseline
 workspace, staking and faucet program crates, placeholder frontend and
 evidence directories, private-note ignore rules, the first audit/test evidence
 structure, and pure checked arithmetic helpers for six-decimal token units and
@@ -66,9 +66,12 @@ harness now starts a fresh validator, loads both programs, creates fixture
 wallets and mints, initializes/funds the pool, and runs the current program and
 browser suites from one command.
 
-Milestones 24 and 25 now have Devnet smoke tooling and public research/audit
-package drafts prepared. Signed browser submission, the real Devnet deploy,
-Devnet smoke output, and final evidence insertion remain planned handoff work.
+The Devnet deployment is recorded in `deployments/devnet.json`, with public
+smoke evidence in `deployments/DEVNET_EVIDENCE.md`. The final research package,
+architecture diagrams, self-audit, setup scripts, local harness, frontend test
+suite, and Devnet smoke checks are now in place. The main remaining limitation
+is explicit by design: this is educational Devnet software, not production
+software or an independent professional audit.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
@@ -247,8 +250,10 @@ deploy only the missing program, for example:
 anchor deploy -p staking_pool --provider.cluster devnet
 ```
 
-Record public addresses, transaction signatures, smoke output, and Explorer
-links using [DEVNET_EVIDENCE_TEMPLATE.md](./deployments/DEVNET_EVIDENCE_TEMPLATE.md).
+Recorded public addresses, transaction signatures, smoke output, and Explorer
+links are in [DEVNET_EVIDENCE.md](./deployments/DEVNET_EVIDENCE.md). The
+blank capture template remains in
+[DEVNET_EVIDENCE_TEMPLATE.md](./deployments/DEVNET_EVIDENCE_TEMPLATE.md).
 
 ## Local E2E Harness
 
