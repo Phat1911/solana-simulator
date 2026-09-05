@@ -12,68 +12,97 @@ The project focuses on accumulated reward-per-stake accounting, integer precisio
 
 ## Current Status
 
-Milestones 1 through 25 are complete. The repository now has the baseline
-workspace, staking and faucet program crates, placeholder frontend and
-evidence directories, private-note ignore rules, the first audit/test evidence
-structure, and pure checked arithmetic helpers for six-decimal token units and
-scaled reward units. It also has pure global reward checkpoint math for
-slot-based emissions, funded-budget caps, pause gaps, zero-stake checkpoints,
-exhaustion, partial final emission, and scaled rounding remainders. Position
-settlement and claim math now preserve reward debt, pending scaled rewards,
-whole-token claims, fractional carry, and emergency forfeiture conservation.
-The staking program now defines fixed-size Anchor-serializable Pool, Position,
-and Proposal account schemas plus canonical PDA derivation helpers. Pool
-initialization now creates the canonical Pool PDA and Pool Authority-owned stake
-and reward vault ATAs, validates three distinct admins, distinct six-decimal
-mints, the original SPL Token Program, and starts each pool paused with reward
-emission set to zero. Users can now open their canonical Position PDA for a
-pool, fund rewards through validated SPL Token transfers, stake from canonical
-STAKE ATAs, unstake principal through the Pool Authority PDA, claim whole REWARD
-base units, and close a position only when it contains no stake or reward
-accounting. Any current admin can now pause a pool after checkpointing, paused
-slots do not generate rewards, and users can emergency-withdraw principal while
-forfeiting their complete scaled reward entitlement back into the unallocated
-reward budget.
-The staking program now also supports the scoped 2-of-3 proposal system for
-reward-rate changes, proposal-based unpause, and one-admin replacement, with
-proposal expiry, stale-epoch invalidation, replay prevention, and safe proposal
-closure back to the recorded creator.
-The separate demo faucet program now mints exactly `1_000 STAKE` once per
-wallet through a Faucet Authority PDA, creates the user's canonical STAKE ATA
-when needed, and records a permanent claim receipt PDA.
-The cross-instruction LiteSVM suite now drives two users through funding,
-staking, reward claims, governance rate changes, pause/unpause, normal unstake,
-and emergency forfeiture. It also replays fixed-seed operation sequences and
-checks principal solvency, exact scaled reward conservation, canonical account
-binding, token-supply conservation, and atomic rollback after rejected calls.
-The repository now also includes Milestone 19 setup automation for localnet and
-Devnet configuration validation, mint creation, REWARD supply minting,
-REWARD mint-authority revocation, pool initialization, reward funding, and
-public deployment metadata generation without storing key material. The
-frontend is now a real Next.js 16 and React 19 app with generated Anchor IDL
-artifacts, Wallet Standard discovery, Solana Kit read-only RPC plumbing,
-deployment/account status display, Tailwind CSS styling, and reusable bigint
-formatting helpers for six-decimal token base units. The frontend also prepares
-canonical user transactions for faucet claims, position opening, first-stake
-bundling, stake, unstake, claim, emergency withdraw, and position close; it
-decodes Pool and Position account data, displays user balances and estimated
-pending rewards, and keeps transaction amounts as integer base units.
-The admin console now prepares funding, immediate pause, proposal creation,
-approval, execution, and closure transactions; it displays exact proposal
-parameters, approval count, admin epoch, expiry, execution state, and whether
-the connected wallet is currently eligible as an admin. A local end-to-end
-harness now starts a fresh validator, loads both programs, creates fixture
-wallets and mints, initializes/funds the pool, and runs the current program and
-browser suites from one command.
+Milestones 1 through 25 are complete.
 
-The Devnet deployment is recorded in `deployments/devnet.json`, with public
-smoke evidence in `deployments/DEVNET_EVIDENCE.md`. The final research package,
-architecture diagrams, self-audit, setup scripts, local harness, frontend test
-suite, and Devnet smoke checks are now in place. The main remaining limitation
-is explicit by design: this is educational Devnet software, not production
-software or an independent professional audit.
+The repository includes:
+
+- Two Anchor programs: the staking pool and a Devnet-only STAKE faucet.
+- Integer reward accounting with principal and reward solvency checks.
+- PDA-owned vaults, canonical user ATAs, pause safety, emergency withdrawal,
+  and scoped `2-of-3` admin proposals.
+- A Next.js wallet frontend that prepares canonical user and admin
+  transactions.
+- Pure Rust tests, LiteSVM invariant tests, frontend tests, a local E2E
+  harness, and Devnet smoke evidence.
+- A public research article, architecture diagrams, deployment evidence, and
+  self-audit.
+
+Key project documents:
+
+- [Research narrative](./docs/RESEARCH.md)
+- [Architecture and flow diagrams](./docs/diagrams/README.md)
+- [Security self-audit](./AUDIT.md)
+- [Devnet evidence](./deployments/DEVNET_EVIDENCE.md)
+- [Authoritative specification](./SPEC.md)
+
+Main limitation: this is educational Devnet software, not production software
+or an independent professional audit.
 
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
+
+## Visual Guide
+
+### Account Map
+
+```mermaid
+flowchart TD
+  Wallet[User or admin wallet]
+  Faucet[Demo Faucet Program]
+  Staking[Staking Program]
+  Token[Original SPL Token Program]
+
+  Pool[Pool State PDA]
+  Position[Position PDA]
+  Proposal[Proposal PDA]
+  PoolAuthority[Pool Authority PDA]
+  FaucetAuthority[Faucet Authority PDA]
+  ClaimReceipt[Faucet Claim PDA]
+
+  StakeMint[STAKE Mint]
+  RewardMint[REWARD Mint]
+  UserStakeAta[User STAKE ATA]
+  UserRewardAta[User REWARD ATA]
+  StakeVault[Stake Vault ATA]
+  RewardVault[Reward Vault ATA]
+
+  Wallet --> Staking
+  Wallet --> Faucet
+  Staking --> Pool
+  Staking --> Position
+  Staking --> Proposal
+  Staking --> PoolAuthority
+  Faucet --> FaucetAuthority
+  Faucet --> ClaimReceipt
+
+  FaucetAuthority --> StakeMint
+  PoolAuthority --> StakeVault
+  PoolAuthority --> RewardVault
+
+  Token --> StakeMint
+  Token --> RewardMint
+  Token --> UserStakeAta
+  Token --> UserRewardAta
+  Token --> StakeVault
+  Token --> RewardVault
+```
+
+### Reward Solvency
+
+```mermaid
+flowchart LR
+  Funding[fund_rewards transfer] --> Vault[Reward Vault]
+  Funding --> Budget[Remaining Reward Budget]
+  Budget --> Checkpoint[Slot Checkpoint]
+  Checkpoint --> Liability[Allocated Reward Liability]
+  Liability --> Claim[User Claim]
+  Claim --> UserReward[User REWARD ATA]
+  Claim --> Reduced[Reduced Liability]
+
+  Vault -. backs .-> Budget
+  Vault -. backs .-> Liability
+```
+
+More diagrams are in [docs/diagrams](./docs/diagrams/README.md).
 
 ## Architecture
 
