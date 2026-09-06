@@ -1,6 +1,6 @@
 # Slot Staking
 
-Slot Staking is an educational Solana DeFi project that implements a real slot-based staking pool with Rust, Anchor, the original SPL Token Program, a wallet-connected frontend, and a public Devnet deployment.
+Slot Staking is an educational Solana DeFi project that implements a slot-based staking pool with Rust, Anchor, the original SPL Token Program, a wallet-connected frontend, and a public Devnet deployment.
 
 > This repository is a research and portfolio project. It is not production-ready, has not received an independent professional audit, and must not custody assets with real value.
 
@@ -210,7 +210,7 @@ The project uses four levels of evidence:
 3. Local RPC and frontend end-to-end workflows
 4. Public Devnet smoke tests with Explorer evidence
 
-Security review happens throughout implementation. Each milestone adds adversarial tests and updates the public self-audit. The final audit will state its limitations and will not claim independent review.
+As part of the learning process, each milestone adds adversarial tests and updates the project's security self-review. The final audit will state its limitations and will not claim independent review.
 
 ## Planned Repository Layout
 

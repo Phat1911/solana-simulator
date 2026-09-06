@@ -1,0 +1,33 @@
+- for this concept i think u should goes step by step , each answer u should represent a piece of knnowledge about it and ask me to confirm i understand this piece, if i keep ask something about it, keep explain for it, if i said yes, u should go to the next piece of knowledge about PDA.
+- default chain:
+initialize pool
+fund rewards
+create + approve + execute unpause proposal
+Alice stakes
+advance slots
+Bob stakes later
+advance slots
+Alice claims
+Bob unstakes partially
+pause by admin
+claim while paused fails
+Bob emergency withdraws
+unpause through proposal
+Alice unstakes and claims
+
+these below information is never exposed in real deploy.
+
+Wrote new keypair to /home/hong_phat/.config/solana/id.json
+=========================================================================
+pubkey: 2W5TpA6NHR5bCuDA7btAy5aZwKk8PkM3KFHefztBdYJp
+=========================================================================
+Save this seed phrase and your BIP39 passphrase to recover your new keypair:
+steak auto crop time equip require balance post submit bleak flat crumble
+=========================================================================
+2W5TpA6NHR5bCuDA7btAy5aZwKk8PkM3KFHefztBdYJp
+Config File: /home/hong_phat/.config/solana/cli/config.yml
+RPC URL: https://api.devnet.solana.com
+WebSocket URL: wss://api.devnet.solana.com/ (computed)
+Keypair Path: /home/hong_phat/.config/solana/id.json
+Commitment: confirmed
+Requesting airdrop of 2 SOL

@@ -30,6 +30,7 @@ AUDIT.md                 Living self-audit and test evidence
 
 ## Coding Conventions
 
+- Never reach (read) my private note file.
 - Follow the module boundaries in `SPEC.md`: instruction handlers, state, constants, errors, events, and pure math.
 - Keep reward math in pure functions. Keep account validation and SPL Token CPIs in instruction handlers.
 - Use checked `u64` arithmetic for token/slot values and checked `u128` arithmetic for scaled intermediates. Never use floating point or a decimal crate for protocol accounting.
@@ -38,6 +39,7 @@ AUDIT.md                 Living self-audit and test evidence
 - Use fixed-size, versioned account layouts. Use canonical PDA seed recipes and canonical user ATAs exactly as specified.
 - Emit events only after successful instructions. Keep comments brief and explain reasons, invariants, or non-obvious Solana behavior.
 - Use the original SPL Token Program, not Token-2022, for this project.
+- If a proccess take a long time to run (like npm install), u just stop and tell me track it and send respond for you.
 
 ## Testing Conventions
 
@@ -89,4 +91,5 @@ AUDIT.md                 Living self-audit and test evidence
 6. Format, compile, and run the milestone's required tests. Investigate failures instead of weakening assertions.
 7. Update `PLAN.md` status and `AUDIT.md` evidence, then report changed files, test results, and known limitations.
 8. Do not combine or skip core milestones unless the user explicitly asks. Stop and ask when an implementation choice would alter an approved rule.
-9. Commit, tag (if needed), and push the change onto github on wsl environment.
+9. Give me fast jump to what you have changed in codebase for recent milestones.
+10. Commit, tag (if needed), and push the change onto github on wsl environment.
