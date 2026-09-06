@@ -38,6 +38,8 @@ Key project documents:
 Main limitation: this is educational Devnet software, not production software
 or an independent professional audit.
 
+Live frontend: [slot-staking-app.vercel.app](https://slot-staking-app.vercel.app)
+
 The authoritative behavior and acceptance criteria are in [SPEC.md](./SPEC.md).
 
 ## Visual Guide
